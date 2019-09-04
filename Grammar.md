@@ -14,11 +14,12 @@ Configuration statements fit on a single line and are terminated by a newline. T
 * `HOST` (IP address) The address in turn determines the network interface which will be bound.
 * `PORT` (TCP port) The port the service should listen on.
 * `LOGGING` (enum) One of `debug`, `info`, `warning`, `error`, `critical` in order of increasing severity.
+* `DEBUG ACCOUNT` (identifier) Name of a locally deliverable account to receive mail for addresses which cannot be disambiguated.
 
 ```
 <config-statement> := <conf-item> : <conf-value> <newline>
-<conf-item> := CASE SENSITIVE | HOST | PORT | LOGGING
-<conf-value> := <boolean> | <address> | <integer> | <log-level>
+<conf-item> := CASE SENSITIVE | HOST | PORT | LOGGING | DEBUG ACCOUNT
+<conf-value> := <boolean> | <address> | <integer> | <log-level> | <identifier>
 ```
 
 ### Alias specifications
@@ -215,4 +216,13 @@ MATCHES "%account%-%ident%-%alias%-%code%"
 WITH CHAR(1,-), CHARS();
 ```
 
+### Other issues
 
+##### Addresses which cannot be disambiguated
+
+We presume that we are operating in a hostile environment. While we may never generate aliases which cannot be
+disambiguated (we might even work to avoid it), adversaries are operating with no such constraints.
+
+The server can reject lookups which are unambiguously _not_ known aliases along with invalid aliases. However we presume that some combinations of match expressions and aliases in the wild will not be disambiguated and hence cannot be validated / delivered. This may or may not be due to defects in the address parsing. Experience in the field is needed to gauge actual frequecy and impact.
+
+`DEBUG ACCOUNT` can be used to specify an account for local delivery of mail addressed to addresses which cannot be disambiguated.
