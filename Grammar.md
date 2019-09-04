@@ -153,7 +153,7 @@ WITH CHAR(1,-), CHARS();
 
 ##### An account with a couple of aliases and a checksummed identifier
 
-Matches `joe-google-g6` and `paul-macys-m5` and delivers them to the local account `joe`.
+Matches `joe-google-g6` and `paul-macys-m5` and delivers them to the local account `foo`.
 
 ```
 ACCOUNT foo
