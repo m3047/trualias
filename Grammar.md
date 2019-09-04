@@ -37,12 +37,7 @@ given account may occur in only one statement.
 The account is available for matching within the match expression as `%account%`.
 
 The `USING` clause is optional and forces use of a particular identifier pattern (see below). By default
-`ident` is used. Additionally, if the account match is adjacent to a character which is part of the pattern, then that
-character is removed from the pattern.
-
-For example normally `ident` matches "-" and "_". Given the match expression `%account%-%ident%-%code%`, it's possible
-to match the account `foo_bar` but it is not possible to match the account `foo-bar` because the "-" will be suppressed
-for matching.
+`ident` is used.
 
 The `ALIASED` clause is optional; `ALIASED *` is equivalent to omitting the clause. When wildcarded, the alias
 is identical to the account. If a single account is declared, multiple aliases MAY be specified. If multiple
@@ -188,12 +183,12 @@ WITH CHAR(1,1,-), CHAR(2,-1,-), CHARS(1);
 
 ##### An account with a year along with the account name
 
-Matches `foo+experian-19+e82` and `foo+nytimes-2019+n74`, although it doesn't perform much actual
+Matches `foo-experian-19-e82` and `foo-nytimes-2019-n74`, although it doesn't perform much actual
 validation of the year.
 
 ```
 ACCOUNT foo
-MATCHES "%account%+%alpha%-%number%+%code%"
+MATCHES "%account%-%alnum%-%number%-%code%"
 WITH CHAR(1,1,-), CHARS(1), CHARS(2);
 ```
 
@@ -202,17 +197,17 @@ in the company names.
 
 ```
 ACCOUNT foo
-MATCHES "%account%+%ident%+%code%"
+MATCHES "%account%-%ident%-%code%"
 WITH CHAR(1,-), ALPHAS(), DIGITS();
 ```
 
 If you truly want to validate years (treat them as an enumeration) you can declare them as aliases. Matches
-`foo+experian-19+e8` and `foo+nytimes-2019+n7`.
+`foo-experian-19-e8` and `foo-nytimes-2019-n7`.
 
 ```
 ACCOUNT foo
 ALIASED 18, 2018, 19, 2019
-MATCHES "%account%+%ident%-%alias%+%code%"
+MATCHES "%account%-%ident%-%alias%-%code%"
 WITH CHAR(1,-), CHARS();
 ```
 
