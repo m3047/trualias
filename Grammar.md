@@ -26,7 +26,11 @@ Configuration statements fit on a single line and are terminated by a newline. T
 Alias statements declare accounts, optional alias mappings, and then a way of calculating a checksum for the alias.
 
 ```
-<alias-spec> := ACCOUNT <account>[,...] { USING <identifier-type> } { ALIASED *|<alias>[,...] } MATCHES <match-expr> WITH <calc-expr>;
+<alias-spec> := ACCOUNT <account>[,...]
+                { USING <identifier-type> }
+                { ALIASED *|<alias>[,...] }
+                MATCHES <match-expr>
+                WITH <calc-expr>;
 ```
 
 `account` must exist for local delivery. (Wildcarded accounts: supporting wildcarded accounts was deemed infeasible
