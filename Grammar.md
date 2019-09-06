@@ -79,6 +79,36 @@ matches a locally deliverable email destination.
 * `fqdn`: matches a domain name, or in other words runs of letters, numerals and dashes separated by dots.
 * `ident`: matches the common identifier pattern, which is to say letters, numerals, "-" and "_".
 
+Only `alpha` and `number` may occur immediately adjacent to each other, and neither of them may be immediately
+adjacent to themselves.
+
+**Ambiguous Expressions:**
+
+Ambiguity can occur in both _context_ and _pattern_. That `%alnum%%alnum%` for instance is not allow in a match
+expression is because it is ambiguous except (possibly) in the case where there are precisely two characters to match:
+this is an ambiguous _pattern_ which is detected statically and rejected by the configuration parser.
+
+Some ambiguous _patterns_ are allowed because their abuse may be deemed low risk, and may be raised dynamically in
+response to adversarial or accidental input. As an example, `%alpha%x%alpha%` is relatively benign with input like
+"fooxbar", but becomes ambiguous when confronted with "xxxxxxx"; if all match expressions where this happens belong
+to the same account then the mail will be delivered to that account, otherwise it will be delivered to the `DEBUG_ACCOUNT`.
+
+_Context_ ambiguities arise where there is insufficient information to resolve the account to deliver to in one or
+more match expressions. If the match expression `match-this` were used with multiple accounts, and is flagged by
+the parser. It is possible that multiple match expressions could match the same input; if all of the match expressions
+map to the same account then the mail will be delivered to that account, otherwise it will be delivered to the
+`DEBUG_ACCOUNT`.
+
+The following table summaries whether or not the `account` or `alias` or a unique match expression
+is required:
+
+| Relationship | account | alias | unique expr |
+| ------------ | ------- | ----- | ----------- |
+| account only | either | n/a | either |
+| unique account and alias | either | either | either |
+| one account many aliases | optional | required | n/a |
+| many accounts one alias | required | required | n/a |
+
 ##### calc-expr
 
 A calc expression is a comma separated list of function calls and literals (not white space). The function results
