@@ -1,4 +1,7 @@
 # trualias
+
+_Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
+
 Mentally computable verification codes for email aliases implemented as a postfix tcp table.
 
 These days everybody wants an email address. If you give everybody your main email account, it will become unusable. A lot of people create a second email account which they use for "commercial" purposes. The more sophisticated create aliases, and some of us go as far as [wildcarding an entire domain](https://lewman.blog/2019/09/02/why-i-have-over-one-thousand-personal-email-addresses/).
