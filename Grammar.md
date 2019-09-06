@@ -1,5 +1,7 @@
 # Alias Specification Grammar
 
+_Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
+
 The configuration file contains configuration parameters and alias specifications.
 
 ```
