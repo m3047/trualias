@@ -64,11 +64,3 @@ We make it easy to tailor the format of the alias and to compute a checkum which
 * `CHARS()` Count of characters.
 * `VOWELS()` Count of vowels.
 * `CHAR()` The character at a certain position in an identifier.
-
-### The unobvious uses for email addresses under surveillance capitalism
-
-The _obvious_ unscrupulous uses of email addresses include whoever you gave it to spamming you or selling it on to another party.
-
-The _unobvious_ uses concern tracking and de-anonymization. In the simplest case, you give the same address to multiple entities, and they can correlate that use across their properties (use it as a proxy for identity). Particularly if you use webmail and allow inline images, they can associate that email address with a specific device. In the case of emailed receipts (what could go wrong?) for credit card purchases, you just handed them your identity along with an email address. Going back to webmail, even if you pay cash they can attempt to correlate receipt of the (emailed) receipt to ads viewed in that web browser!
-
-Scrambling aliases allows you to discriminate in _incoming_ messages. It doesn't help you with anonymization when you keep giving it away.
