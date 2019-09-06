@@ -94,7 +94,8 @@ response to adversarial or accidental input. As an example, `%alpha%x%alpha%` is
 to the same account then the mail will be delivered to that account, otherwise it will be delivered to the `DEBUG_ACCOUNT`.
 
 _Context_ ambiguities arise where there is insufficient information to resolve the account to deliver to in one or
-more match expressions. If the match expression `match-this` were used with multiple accounts, and is flagged by
+more match expressions. If the match expression `match-this` (a string of nothing but literals) was used
+with multiple accounts, then it would be ambiguous and is flagged by
 the parser. It is possible that multiple match expressions could match the same input; if all of the match expressions
 map to the same account then the mail will be delivered to that account, otherwise it will be delivered to the
 `DEBUG_ACCOUNT`.
