@@ -53,10 +53,10 @@ The alias is available for matching within the match expression as `%alias%`.
 
 ### match-expr
 
-Match expressions are enclosed in double quotes and consist of literals interspersed with match values.
+Match expressions consist of literals interspersed with match values.
 
 ```
-<match-expr> := "[<match-val>|<literal>][...]"
+<match-expr> := [<match-val>|<literal>][...]
 ```
 
 `literal` is simply a literal character. `match-val` is inside "%" characters and there are three kinds: account/alias,
