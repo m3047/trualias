@@ -63,4 +63,5 @@ We make it easy to tailor the format of the alias and to compute a checkum which
 * `LABELS()` Count of labels in an domain name.
 * `CHARS()` Count of characters.
 * `VOWELS()` Count of vowels.
+* `ANY()` Any character in an identifier.
 * `CHAR()` The character at a certain position in an identifier.
