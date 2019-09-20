@@ -183,7 +183,7 @@ class TestParsingAliases(unittest.TestCase):
         aliases = parse("""
                         ACCOUNT foo
                         ALIASED banana, orange,yoyoma
-                        MATCHES %account%-%code%
+                        MATCHES %alias%-%code%
                         WITH  CHAR(1,-);
                         """
                        )['aliases']
@@ -424,6 +424,220 @@ class TestCalcSemantics(unittest.TestCase):
                         WITH ANY(5);
                           """
                          )
+        return
+    
+class TestUniqueness(unittest.TestCase):
+    """Tests our uniqueness guarantees."""
+    
+    def test_account_no_alias_good(self):
+        """Test successful validation of an account with no aliases."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY();
+                        
+                        ACCOUNT bar
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases), 2,
+                         msg="Expected 2 account specs."
+                        )
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        return
+
+    def test_account_no_alias_bad(self):
+        """Test failed validation of an account with no aliases."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES %alpha%-%code%
+                          WITH ANY();
+                          
+                          ACCOUNT bar
+                          MATCHES %alpha%-%code%
+                          WITH ANY();
+                        """
+                       )
+        return
+    
+    def test_account_unique_alias_good(self):
+        """Test successful validation of an account and alias both unique."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz
+                        MATCHES %alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY();
+                        
+                        ACCOUNT bar
+                        ALIASED buzz
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases), 2,
+                         msg="Expected 2 account specs."
+                        )
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz
+                        MATCHES %alias%-%alpha%-%code%
+                        WITH ANY();
+                        
+                        ACCOUNT bar
+                        ALIASED buzz
+                        MATCHES %alias%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases), 2,
+                         msg="Expected 2 account specs."
+                        )
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        return
+        
+    def test_account_unique_alias_bad(self):
+        """Test failed validation of a unique account+alias."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          ALIASED fizz
+                          MATCHES %alpha%-%code%
+                          WITH ANY();
+                          
+                          ACCOUNT bar
+                          ALIASED buzz
+                          MATCHES %alpha%-%code%
+                          WITH ANY();
+                        """
+                       )
+        return
+    
+    def test_account_many_aliases_good(self):
+        """Test successful validation of an account with many aliases."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz, buzz
+                        MATCHES %alias%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        return
+        
+    def test_account_many_aliases_bad(self):
+        """Test failed validation of an account with many aliases.."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          ALIASED fizz, buzz
+                          MATCHES %account%-%alpha%-%code%
+                          WITH ANY();
+                        """
+                       )
+        return
+
+    def test_many_accounts_good(self):
+        """Test successful validation of many accounts single alias."""
+        aliases = parse("""
+                        ACCOUNT foo, bar
+                        ALIASED fizz, buzz
+                        MATCHES %account%-%alias%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz, buzz
+                        MATCHES %account%-%alias%-%alpha%-%code%
+                        WITH ANY();
+
+                        ACCOUNT bar
+                        ALIASED fizz, buzz
+                        MATCHES %alias%-%account%-%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        return
+
+    def test_account_many_aliases_bad(self):
+        """Test failed validation of an account with many aliases.."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo, bar
+                          ALIASED fizz, buzz
+                          MATCHES %account%-%alpha%-%code%
+                          WITH ANY();
+                        """
+                       )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo, bar
+                          ALIASED fizz, buzz
+                          MATCHES %alias%-%alpha%-%code%
+                          WITH ANY();
+                        """
+                       )
         return
 
 if __name__ == '__main__':

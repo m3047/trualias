@@ -673,7 +673,34 @@ class Configuration(object):
         
         FLUENT: returns the object.
         """
-        # TODO: Update when we figure out what's needed.
+        # Determine which match expressions are unique.
+        expressions = {}
+        for expr in (spec.matchex for spec in self.config['aliases']):
+            if expr.expression_ in expressions:
+                expressions[expr.expression_] += 1
+            else:
+                expressions[expr.expression_] = 1
+        for expr in (spec.matchex for spec in self.config['aliases']):
+            expr.unique = expressions[expr.expression_] == 1
+            
+        # Determine which accounts / aliases are referenced by which account declarations.
+        self.accounts = {}
+        self.aliases = {}
+        self.alias_accounts = {}
+        for spec in self.config['aliases']:
+            for ident in spec.accounts:
+                if ident in self.accounts:
+                    self.accounts[ident].append(spec)
+                else:
+                    self.accounts[ident] = [spec]
+            for ident in spec.aliases:
+                if ident in self.aliases:
+                    self.aliases[ident].append(spec)
+                    self.alias_accounts[ident] |= set(spec.accounts)
+                else:
+                    self.aliases[ident] = [spec]
+                    self.alias_accounts[ident] = set(spec.accounts)
+                
         return self
     
     def update_config(self, new_config):
@@ -691,6 +718,17 @@ class Configuration(object):
             alias.semantic_check()
         return
     
+    def associated_aliases(self, account):
+        """Return the aliases associated with an account."""
+        aliases = []
+        for spec in self.accounts[account]:
+            aliases += spec.aliases
+        return set(aliases)
+        
+    def associated_accounts(self, alias):
+        """Return the accounts associated with an alias."""
+        return self.alias_accounts[alias]
+    
     def enforce_uniqueness(self):
         """Enforce semantic requirements for uniqueness.
         
@@ -701,6 +739,54 @@ class Configuration(object):
         * alias
         * match expression
         """
+        for account in self.accounts:
+            
+            associated_aliases = self.associated_aliases(account)
+            
+            for spec in self.accounts[account]:
+
+                # Has no aliases.
+
+                if not associated_aliases:
+                    if 'account' in spec.matchex.tokens or spec.matchex.unique:
+                        continue
+                    raise SemanticError('Ambiguous because the account is not present and expression not unique {}'.format(spec.matchex.expression_),
+                                        additional=dict(line_number=spec.matchex.line_number)
+                                       )
+                    
+                # Account and alias are uniquely paired.
+
+                if len(associated_aliases) == 1 and len(self.associated_accounts(tuple(associated_aliases)[0])) == 1:
+                    if 'account' in spec.matchex.tokens or 'alias' in spec.matchex.tokens or spec.matchex.unique:
+                        continue
+                    raise SemanticError('Ambiguous because neither account or alias is present and expression not unique {}'.format(spec.matchex.expression_),
+                                        additional=dict(line_number=spec.matchex.line_number)
+                                       )
+
+                # Many aliases
+                
+                for alias in associated_aliases:
+                    if len(self.associated_accounts(tuple(associated_aliases)[0])) == 1:
+                        if 'alias' in spec.matchex.tokens:
+                            continue
+                        raise SemanticError('Ambiguous because alias is not present {}'.format(spec.matchex.expression_),
+                                            additional=dict(line_number=spec.matchex.line_number)
+                                       )
+                
+        # Alias has many accounts.
+
+        for alias in self.aliases:
+
+            if len(self.associated_accounts(alias)) < 2:
+                continue
+        
+            for spec in self.aliases[alias]:
+                
+                if 'account' in spec.matchex.tokens and 'alias' in spec.matchex.tokens:
+                    continue
+                raise SemanticError('Ambiguous because account and alias are not present {}'.format(spec.matchex.expression_),
+                                    additional=dict(line_number=spec.matchex.line_number)
+                                )
         return
     
     def load(self,loader,raise_on_error=False):
