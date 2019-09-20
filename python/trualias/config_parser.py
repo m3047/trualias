@@ -48,8 +48,8 @@ def DEFAULT_CONFIG(minimal=False):
     config['aliases'] = []
     return config
 
-class ParseError(Exception):
-    """A parsing error occurred."""
+class ConfigurationError(Exception):
+    """An invalid/inconsistent configuration."""
     def __init__(self, reason, additional=None):
         self.reason = reason
         self.additional = additional or []
@@ -59,6 +59,14 @@ class ParseError(Exception):
         return '{} ({})'.format(self.reason,
                                 ', '.join('{}:{}'.format(k,str(self.additional[k])) for k in self.additional.keys())
                                )
+        
+class ParseError(ConfigurationError):
+    """A parsing error occurred."""
+    pass
+
+class SemanticError(ConfigurationError):
+    """A semantic error occurred."""
+    pass
 
 BOOLEAN_VALUE = { 'true':True, '1':True, 'false':False, '0':False }
 
@@ -127,6 +135,18 @@ class Matcher(object):
             test_pos += 1
         
         return (start_pos, valid_end_pos)
+    
+class MatchAny(Matcher):
+    """Matches anything and everything!
+    
+    Subclassed from Matcher for no good functional but every good
+    nonfunctional reason.
+    """
+    def __init__(self):
+        return
+    
+    def __call__(self, address, start_pos=0):
+        return 0, (len(address) - 1)
 
 MATCH_ALPHA = set('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz')
 MATCH_NUMBER = set('1234567890')
@@ -137,15 +157,21 @@ MATCH_IDENT = MATCH_ALNUM | set('_')
 class MatchExpression(object):
     """A match expression."""
     DEFAULT_ACCOUNT_MATCH = 'ident'
-    ACCOUNT_MATCHERS = dict( alnum=Matcher(MATCH_ALNUM),
+    IDENT_MATCHERS = dict(   alnum=Matcher(MATCH_ALNUM),
                              alpha=Matcher(MATCH_ALPHA),
                              number=Matcher(MATCH_NUMBER),
-                             fqdn=Matcher(MATCH_ALNUM,MATCH_FQDN,MATCH_ALNUM),
-                             ident=Matcher(MATCH_IDENT,MATCH_IDENT|set('_'),MATCH_IDENT)
+                             ident=Matcher(MATCH_IDENT,MATCH_IDENT|set('-'),MATCH_IDENT),
+                             fqdn=Matcher(MATCH_IDENT,MATCH_FQDN,MATCH_IDENT)
                            )
+    ALL_MATCHERS = dict( IDENT_MATCHERS,
+                             account=Matcher(MATCH_IDENT),
+                             alias=Matcher(MATCH_IDENT),
+                             code=MatchAny()
+                       )
+    FRIENDLIES = { 'alpha', 'number' }
     
     def __init__(self):
-        self.account_matcher_ = self.ACCOUNT_MATCHERS[self.DEFAULT_ACCOUNT_MATCH]
+        self.account_matcher = self.DEFAULT_ACCOUNT_MATCH
         return
     
     def __str__(self):
@@ -157,9 +183,11 @@ class MatchExpression(object):
     
     @account_matcher.setter
     def account_matcher(self, value):
-        if value not in self.ACCOUNT_MATCHERS:
+        if value not in self.IDENT_MATCHERS:
             self.parse_error('Unrecognized identifier matcher: "{}"'.format(value))
         self.account_matcher_ = value
+        self.ALL_MATCHERS['account'] = self.IDENT_MATCHERS[self.account_matcher_]
+        self.ALL_MATCHERS['alias'] = self.IDENT_MATCHERS[self.account_matcher_]
         return
     
     @property
@@ -168,10 +196,67 @@ class MatchExpression(object):
     
     @expression.setter
     def expression(self, value):
-        # TODO: At a minimum there will be validation here for ambiguity.
+        """Compile the match expression while checking for semantic validity.
+        
+        Semantic validity chiefly means that only alpha and number can occur
+        adjacent to each other.
+        """
+        if isinstance(value,tuple):
+            value, self.line_number = value
+        self.identifiers = 0
+        self.fqdns = set()
+        input_tokens = value.split('%')
+        tokens = []
+        state = ''
+        outside = False
+        i = 0
+        for tok in input_tokens:
+            i += 1
+            outside ^= True
+            if outside:
+                if not tok and i+1 < len(input_tokens) and not input_tokens[i+1]:
+                    tokens.append('%')
+                else:
+                    tokens.append(tok)
+                if tok:
+                    state = ''
+            else:
+                if not tok:
+                    if i > 0 and not input_tokens[i-1]:
+                        continue
+                    else:
+                        self.semantic_error('Empty matchvalue.')
+                else:
+                    if tok not in self.ALL_MATCHERS:
+                        self.semantic_error('Unrecognized matchvalue "{}".'.format(tok))
+                    if state == 'poison':
+                        self.semantic_error('"{}" cannot occur next to any other matcher.'.format(tok))
+                        
+                    if tok in self.FRIENDLIES:
+                        if tok == state:
+                            self.semantic_error('"{}" cannot occur next to itself.'.format(tok))
+                        state = tok
+                    else:
+                        if state in self.FRIENDLIES:
+                            self.semantic_error('"{}" cannot occur next to any other matcher.'.format(tok))
+                        state = 'poison'
+                        
+                    if tok in self.IDENT_MATCHERS:
+                        self.identifiers += 1
+                        if tok == 'fqdn':
+                            self.fqdns.add(self.identifiers)
+                        
+                    tokens.append(tok)
+
+        self.tokens = tokens
         self.expression_ = value
         return
     
+    def semantic_error(self, reason, **kwargs):
+        additional = dict(line_number=self.line_number)
+        additional.update(kwargs)
+        raise SemanticError(reason, additional)
+
     def match(self, accounts, aliases, address):
         # TODO: yes!!
         pass
@@ -183,16 +268,83 @@ class CalcExpression(object):
     """
     
     def __init__(self):
-        self.calcs = []
+        self.calcs_ = []
         return
     
     def __getitem__(self,i):
         """Implemented this to simplify writing test cases."""
-        return self.calcs[i]
+        return self.calcs_[i]
     
     def __len__(self):
         """For test cases."""
-        return len(self.calcs)
+        return len(self.calcs_)
+    
+    @property
+    def calcs(self):
+        return self.calcs_
+    
+    @calcs.setter
+    def calcs(self,value):
+        if isinstance(value,tuple):
+            value, self.line_number = value
+        self.calcs_ = value
+        return
+    
+    def semantic_error(self, reason, **kwargs):
+        additional = dict(line_number=self.line_number)
+        additional.update(kwargs)
+        raise SemanticError(reason, additional)
+
+    def semantic_check(self, matchex):
+        """Checks that the calc is valid with the match expression.
+        
+        Chiefly this consists of checking reference bounds and number of arguments.
+        Some things cannot be caught (e.g. label indices) as they are dependent on the
+        input (account) being matched.
+        """
+        n_identifiers = matchex.identifiers
+        for calc in self.calcs:
+            func = calc[0]
+            args = calc[1:]
+            needs_ident_subscript = n_identifiers > 1
+            if func == 'CHAR':
+                if len(args) > 4:
+                    self.semantic_error('{} requires at most 4 arguments with {}'.format(func, matchex.expression))
+                if needs_ident_subscript:
+                    if len(args) < 3:
+                        self.semantic_error('{} requires an identifier subscript with {}'.format(func, matchex.expression))
+                    i_ident = int(args[0])
+                    if i_ident < 1 or i_ident > n_identifiers:
+                        self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))
+                    if len(args) == 4:
+                        if i_ident not in matchex.fqdns:
+                            self.semantic_error('{} index {} does not reference an fqdn in {}'.format(func, i_ident, matchex.expression))
+                    else:
+                        if i_ident in matchex.fqdns:
+                            self.semantic_error('{} index {} references an fqdn and needs a label index with {}'.format(func, i_ident, matchex.expression))
+                else:
+                    if len(args) < 2:
+                        self.semantic_error('{} requires at least 2 arguments with {}'.format(func, matchex.expression))
+                    if len(args) == ((1 in matchex.fqdns) and 4 or 3) and int(args[0]) != 1:
+                        self.semantic_error('{} must have index of 1 with {}'.format(func, matchex.expression))
+                for i in range(len(calc)-2):
+                    calc[i+1] = int(calc[i+1])
+            else:
+                if len(args) > 1:
+                    self.semantic_error('{} requires at most 1 argument with {}'.format(func, matchex.expression))
+                if needs_ident_subscript:
+                    if len(args) < 1:
+                        print(self.calcs)
+                        self.semantic_error('{} requires an identifier subscript with {}'.format(func, matchex.expression))
+                    i_ident = int(args[0])
+                    if i_ident < 1 or i_ident > n_identifiers:
+                        self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))
+                else:
+                    if len(args) and int(args[0]) != 1:
+                        self.semantic_error('{} must have index of 1 with {}'.format(func, matchex.expression))
+                if len(calc) > 1:
+                    calc[1] = int(calc[1])
+        return
 
 class Alias(object):
     """A single alias specification.
@@ -215,6 +367,15 @@ class Alias(object):
     def __str__(self):
         return '<accounts:{}  aliases:{}  matches:{}  calc:{}>'.format(
                self.accounts, self.aliases, self.matchex, self.calc)
+        
+    def semantic_check(self):
+        """Makes sure that the match expression and calc are semantically valid.
+        
+        The match expression itself is checked for consistency when it is
+        saved.
+        """
+        self.calc.semantic_check(self.matchex)
+        return
     
 class Loader(object):
     """Base class for all config generators/loaders."""
@@ -342,7 +503,7 @@ class StreamParsingLoader(Loader):
 
         spec = Alias()
         
-        # One or more accounts, until we see USING, ALIASES or MATCHES.
+        # One or more accounts, until we see USING, ALIASED or MATCHES.
         spec.accounts = self.accounts_or_aliases()
         
         item = self.token()
@@ -365,7 +526,7 @@ class StreamParsingLoader(Loader):
         
         self.token_matched()
         
-        spec.matchex.expression = self.token()
+        spec.matchex.expression = (self.token(), self.line_number)
         self.token_matched()
         
         item = self.token()
@@ -373,7 +534,7 @@ class StreamParsingLoader(Loader):
             self.parse_error('Syntax Error: Unrecognized keyword "{}" expecting "WITH"'.format(item))
         self.token_matched()
         
-        spec.calc.calcs = self.calcs()
+        spec.calc.calcs = (self.calcs(), self.line_number)
         
         item = self.token()
         if not item.startswith(';'):
@@ -406,7 +567,7 @@ class StreamParsingLoader(Loader):
         params, more = self.trailing(')',params)
         self.token_ = more
         params = params.strip().split(',')
-        return (len(params) != 1 and params[0]) and params or []
+        return (len(params) != 1 or params[0]) and params or []
 
     def calcs(self):
         calc_list = []
@@ -424,7 +585,7 @@ class StreamParsingLoader(Loader):
                 self.token_ = item[1:]
             else:
                 break
-        return calc_list            
+        return calc_list
     
     def token_matched(self):
         self.token_ = None
@@ -484,6 +645,7 @@ class Configuration(object):
         call load() to update the configuration.
         """
         self.config = DEFAULT_CONFIG()
+        self.error = 'Not configured.'
         return
 
     @property
@@ -523,18 +685,39 @@ class Configuration(object):
         self.build_maps()
         return self
     
+    def semantic_check(self):
+        """Check the semantic validity of the configuration."""
+        for alias in self.config['aliases']:
+            alias.semantic_check()
+        return
+    
+    def enforce_uniqueness(self):
+        """Enforce semantic requirements for uniqueness.
+        
+        The tuple consisting of the following should be unique according to some
+        definition which varies depending on the data:
+        
+        * account
+        * alias
+        * match expression
+        """
+        return
+    
     def load(self,loader,raise_on_error=False):
         """Use the loader to update the configuration.
         
         FLUENT: returns the object.
         """
+        self.error = ''
         try:
             self.update_config(loader.load())
-        except ParseError as e:
+            self.semantic_check()
+            self.enforce_uniqueness()
+        except (ConfigurationError, ValueError) as e:
             if raise_on_error:
                 raise e
-            # TODO: Log it
-            logging.error(' ParseError: {}'.format(e))
+            self.error = ' {}: {}'.format(str(type(e)).split('.')[-1].split("'")[0], e)
+            logging.error(self.error)
         return self
 
     

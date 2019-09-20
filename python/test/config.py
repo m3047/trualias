@@ -56,7 +56,7 @@ class TestParsingConfig(unittest.TestCase):
                         msg='Should successfully parse "true" (space before ":")'
                        )
         self.assertTrue(parse(' CASE  SENSITIVE : true \n\n')['case_sensitive'],
-                        msg='Should successfully parse "true" (space before ":")'
+                        msg='Should successfully parse "true" (extra space between keywords )'
                        )
         self.assertRaises(config_parser.ParseError, parse, 'DEBUG WALRUS : true \n\n')
 
@@ -203,6 +203,227 @@ class TestParsingAliases(unittest.TestCase):
         self.assertEqual(len(aliases[0].calc), 3,
                          msg='Expected 3 calcs.'
                         )
+        return
+    
+class TestMatchexSemantics(unittest.TestCase):
+    """Verifies semantic checking of match expressions."""
+    
+    def test_adjacent_poison(self):
+        """Some adjacent things should be out-and-out rejected."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES %ident%%ident%-%code%
+                          WITH ANY(1),ANY(2);
+                          """
+                         )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%%alpha%-%code%
+                          WITH ANY(1),ANY(2);
+                          """
+                         )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%%ident%-%code%
+                          WITH ANY(1),ANY(2);
+                          """
+                         )
+        return
+    
+    def test_friendly_bad(self):
+        """Some things are allowed sometimes but disallowed others."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%%alpha%-%code%
+                          WITH ANY(1),ANY(2);
+                          """
+                         )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%number%%number%-%code%
+                          WITH ANY(1),ANY(2);
+                          """
+                         )
+        return
+    
+    def test_friendly_good(self):
+        """Some things are disallowed sometimes but allowed others."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES something%number%%alpha%-%code%
+                        WITH ANY(1),ANY(2);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].matchex.tokens), 7,
+                         msg="Successfully parsed matchex should have 7 elements."
+                        )
+        return
+
+class TestCalcSemantics(unittest.TestCase):
+    """Verifies semantic checking of calcs."""
+    
+    def test_char_args_good_2(self):
+        """Tests good CHAR() with 2 args."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES something%alpha%-%code%
+                        WITH CHAR(2,-);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 3,
+                         msg="Expected calc to have 2 args."
+                        )
+        return
+    
+    def test_char_args_good_3_idents(self):
+        """Tests good CHAR() with 3 args, multiple idents."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%alpha%-%code%
+                        WITH CHAR(1,2,-);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 4,
+                         msg="Expected calc to have 3 args."
+                        )
+        return
+
+    def test_char_args_good_3_fqdn(self):
+        """Tests good CHAR() with 3 args, fqdn."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%fqdn%-%code%
+                        WITH CHAR(1,2,-);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 4,
+                         msg="Expected calc to have 3 args."
+                        )
+        return
+
+    def test_char_args_good_4(self):
+        """Tests good CHAR() with 4 args."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%fqdn%-%fqdn%-%code%
+                        WITH CHAR(2,1,2,-);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 5,
+                         msg="Expected calc to have 4 args."
+                        )
+        return
+    
+    def test_char_3_args_opt(self):
+        """Tests good CHAR() with an optional identifier index."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES something%alpha%-%code%
+                        WITH CHAR(1,2,-);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 4,
+                         msg="Expected calc to have 3 args."
+                        )
+        return
+
+    def test_char_bad_index(self):
+        """Tests CHAR() identifier index out of range."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%-%code%
+                          WITH CHAR(0,2,-);
+                          """
+                         )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%-%code%
+                          WITH CHAR(42,2,-);
+                          """
+                         )
+        return
+    
+    def test_generic_no_index_good(self):
+        """Tests no index argument."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES something%alpha%-%code%
+                        WITH ANY();
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 1,
+                         msg="Expected calc to have no args."
+                        )
+        return
+        
+    def test_generic_no_index_bad(self):
+        """Tests no index argument."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                          ACCOUNT foo
+                          MATCHES something%alpha%-%alpha%-%code%
+                          WITH ANY();
+                          """
+                         )
+        return
+
+    def test_generic_index_good(self):
+        """Tests good index argument."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%alpha%-%alpha%-%code%
+                        WITH ANY(2);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 2,
+                         msg="Expected calc to have 1 arg."
+                        )
+        return
+
+    def test_generic_index_bad(self):
+        """Tests CHAR() identifier index out of range."""
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%alpha%-%alpha%-%code%
+                        WITH ANY(0);
+                          """
+                         )
+        self.assertRaises(config_parser.SemanticError, parse,
+                          """
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%alpha%-%alpha%-%code%
+                        WITH ANY(5);
+                          """
+                         )
         return
 
 if __name__ == '__main__':
