@@ -7,44 +7,46 @@ import logging
 
 if '..' not in sys.path:
     sys.path.insert(0,'..')
-    
-import trualias.config_parser as config_parser
+
+from trualias import CASE_SENSITIVE, HOST, PORT, LOGGING, DEBUG_ACCOUNT
+import trualias.config as config
+import trualias.parser as parser
 
 def parse(text):
-    return config_parser.from_text(config_parser.MultilineStringLoader(text),raise_on_error=True).config
+    return config.from_text(parser.MultilineStringLoader(text),raise_on_error=True).config
 
 class TestBasicParsing(unittest.TestCase):
     """Tests basic parsing."""
     
     def test_empty_config(self):
         """Empty configuration."""
-        config = parse('')
+        configuration = parse('')
         
-        self.assertEqual(config['case_sensitive'], config_parser.CASE_SENSITIVE)
-        self.assertEqual(config['host'], config_parser.HOST)
-        self.assertEqual(config['port'], config_parser.PORT)
-        self.assertEqual(config['logging'], config_parser.LOGGING)
-        self.assertEqual(config['debug_account'], config_parser.DEBUG_ACCOUNT)
-        self.assertEqual(len(config['aliases']), 0)
+        self.assertEqual(configuration['case_sensitive'], CASE_SENSITIVE)
+        self.assertEqual(configuration['host'], HOST)
+        self.assertEqual(configuration['port'], PORT)
+        self.assertEqual(configuration['logging'], LOGGING)
+        self.assertEqual(configuration['debug_account'], DEBUG_ACCOUNT)
+        self.assertEqual(len(configuration['aliases']), 0)
 
         return
     
     def test_blank_config(self):
         """Multiline but just white space."""
-        config = parse(' \n\n    \n')
+        configuration = parse(' \n\n    \n')
         
-        self.assertEqual(config['case_sensitive'], config_parser.CASE_SENSITIVE)
-        self.assertEqual(config['host'], config_parser.HOST)
-        self.assertEqual(config['port'], config_parser.PORT)
-        self.assertEqual(config['logging'], config_parser.LOGGING)
-        self.assertEqual(config['debug_account'], config_parser.DEBUG_ACCOUNT)
-        self.assertEqual(len(config['aliases']), 0)
+        self.assertEqual(configuration['case_sensitive'], CASE_SENSITIVE)
+        self.assertEqual(configuration['host'], HOST)
+        self.assertEqual(configuration['port'], PORT)
+        self.assertEqual(configuration['logging'], LOGGING)
+        self.assertEqual(configuration['debug_account'], DEBUG_ACCOUNT)
+        self.assertEqual(len(configuration['aliases']), 0)
 
         return
     
     def test_unknown_text(self):
         """Garbage text."""
-        self.assertRaises(config_parser.ParseError,parse,'FOO!')
+        self.assertRaises(parser.ParseError,parse,'FOO!')
         return
 
 class TestParsingConfig(unittest.TestCase):
@@ -58,7 +60,7 @@ class TestParsingConfig(unittest.TestCase):
         self.assertTrue(parse(' CASE  SENSITIVE : true \n\n')['case_sensitive'],
                         msg='Should successfully parse "true" (extra space between keywords )'
                        )
-        self.assertRaises(config_parser.ParseError, parse, 'DEBUG WALRUS : true \n\n')
+        self.assertRaises(parser.ParseError, parse, 'DEBUG WALRUS : true \n\n')
 
         return
 
@@ -131,11 +133,11 @@ class TestParsingAliases(unittest.TestCase):
     
     def test_fragments(self):
         """Tests ability to reject incorrect syntax."""
-        self.assertRaises(config_parser.ParseError, parse, '   \nACCOUNT ; \n \n\n')
-        self.assertRaises(config_parser.ParseError, parse, '   \nACCOUNT foo MATCHES bar; \n \n\n')
-        self.assertRaises(config_parser.ParseError, parse, '   \nACCOUNT foo MATCHES bar WITH; \n \n\n')
-        self.assertRaises(config_parser.ParseError, parse, '   \nACCOUNT foo WITH ANY(); \n \n\n')        
-        self.assertRaises(config_parser.ParseError, parse, '   \nACCOUNT ALIASED foo WITH ANY(); \n \n\n')        
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT ; \n \n\n')
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT foo MATCHES bar; \n \n\n')
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT foo MATCHES bar WITH; \n \n\n')
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT foo WITH ANY(); \n \n\n')        
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT ALIASED foo WITH ANY(); \n \n\n')        
         return
 
     def test_basic_alias(self):
@@ -210,21 +212,21 @@ class TestMatchexSemantics(unittest.TestCase):
     
     def test_adjacent_poison(self):
         """Some adjacent things should be out-and-out rejected."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES %ident%%ident%-%code%
                           WITH ANY(1),ANY(2);
                           """
                          )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%%alpha%-%code%
                           WITH ANY(1),ANY(2);
                           """
                          )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%%ident%-%code%
@@ -235,14 +237,14 @@ class TestMatchexSemantics(unittest.TestCase):
     
     def test_friendly_bad(self):
         """Some things are allowed sometimes but disallowed others."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%%alpha%-%code%
                           WITH ANY(1),ANY(2);
                           """
                          )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%number%%number%-%code%
@@ -349,14 +351,14 @@ class TestCalcSemantics(unittest.TestCase):
 
     def test_char_bad_index(self):
         """Tests CHAR() identifier index out of range."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%-%code%
                           WITH CHAR(0,2,-);
                           """
                          )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%-%code%
@@ -383,7 +385,7 @@ class TestCalcSemantics(unittest.TestCase):
         
     def test_generic_no_index_bad(self):
         """Tests no index argument."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES something%alpha%-%alpha%-%code%
@@ -410,14 +412,14 @@ class TestCalcSemantics(unittest.TestCase):
 
     def test_generic_index_bad(self):
         """Tests CHAR() identifier index out of range."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                         ACCOUNT foo
                         MATCHES %account%-%alpha%-%alpha%-%alpha%-%code%
                         WITH ANY(0);
                           """
                          )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                         ACCOUNT foo
                         MATCHES %account%-%alpha%-%alpha%-%alpha%-%code%
@@ -467,7 +469,7 @@ class TestUniqueness(unittest.TestCase):
 
     def test_account_no_alias_bad(self):
         """Test failed validation of an account with no aliases."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           MATCHES %alpha%-%code%
@@ -541,7 +543,7 @@ class TestUniqueness(unittest.TestCase):
         
     def test_account_unique_alias_bad(self):
         """Test failed validation of a unique account+alias."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           ALIASED fizz
@@ -575,7 +577,7 @@ class TestUniqueness(unittest.TestCase):
         
     def test_account_many_aliases_bad(self):
         """Test failed validation of an account with many aliases.."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo
                           ALIASED fizz, buzz
@@ -622,7 +624,7 @@ class TestUniqueness(unittest.TestCase):
 
     def test_account_many_aliases_bad(self):
         """Test failed validation of an account with many aliases.."""
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo, bar
                           ALIASED fizz, buzz
@@ -630,7 +632,7 @@ class TestUniqueness(unittest.TestCase):
                           WITH ANY();
                         """
                        )
-        self.assertRaises(config_parser.SemanticError, parse,
+        self.assertRaises(config.SemanticError, parse,
                           """
                           ACCOUNT foo, bar
                           ALIASED fizz, buzz
@@ -641,5 +643,5 @@ class TestUniqueness(unittest.TestCase):
         return
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)
     
