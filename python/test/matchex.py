@@ -174,6 +174,11 @@ class TestMatchingPrimitives(unittest.TestCase):
         result = matcher("abc123fun321", start_pos=4, end_pos=None, minimal=True)
         self.assertEqual(result, (4,9))
         
+        result = matcher.match_one_more("abc123fun321", start_pos=0, end_pos=5)
+        self.assertFalse(result)
+        result = matcher.match_one_more("abc123fun321", start_pos=5, end_pos=9)
+        self.assertTrue(result)
+
         return
 
     def test_code_matcher_anna(self):

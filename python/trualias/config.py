@@ -140,7 +140,14 @@ class Configuration(object):
         * account
         * alias
         * match expression
+        
+        It may be useful to read inline comments in this method.
+        
+        FEEDBACK / TEST CASES ENCOURAGED: This is all about edge cases. The cases considered
+        here are probably safe, and also probably overly restrictive.
         """
+        
+        # ACCOUNTS...
         for account in self.accounts:
             
             associated_aliases = self.associated_aliases(account)
@@ -148,7 +155,12 @@ class Configuration(object):
             for spec in self.accounts[account]:
 
                 # Has no aliases.
-
+                #
+                # Ok if:
+                #     * 'account' in the matchex
+                #   or
+                #     * matchex is unique
+                #
                 if not associated_aliases:
                     if 'account' in spec.matchex.tokens or spec.matchex.unique:
                         continue
@@ -157,7 +169,18 @@ class Configuration(object):
                                        )
                     
                 # Account and alias are uniquely paired.
-
+                #
+                # Ok if:
+                #     * alias has one account
+                #   and
+                #     * account has one alias
+                #   and
+                #       * 'account' in matchex
+                #     or
+                #       * 'alias' in matchex
+                #     or
+                #       * matchex is unique
+                #
                 if len(associated_aliases) == 1 and len(self.associated_accounts(tuple(associated_aliases)[0])) == 1:
                     if 'account' in spec.matchex.tokens or 'alias' in spec.matchex.tokens or spec.matchex.unique:
                         continue
@@ -166,17 +189,31 @@ class Configuration(object):
                                        )
 
                 # Many aliases
-                
+                # 
+                # Ok if:
+                #     * alias has one account
+                #   and
+                #       * 'alias' in matchex
+                #     or
+                #       * no aliases for this spec (some other spec has aliases)
+                #
                 for alias in associated_aliases:
                     if len(self.associated_accounts(tuple(associated_aliases)[0])) == 1:
-                        if 'alias' in spec.matchex.tokens:
+                        if 'alias' in spec.matchex.tokens or not spec.aliases:
                             continue
                         raise SemanticError('Ambiguous because alias is not present {}'.format(spec.matchex.expression_),
                                             additional=dict(line_number=spec.matchex.line_number)
                                        )
-                
-        # Alias has many accounts.
 
+        # ALIASES
+        
+        # Alias has many accounts.
+        #
+        # Ok if:
+        #     * 'account' in matchex
+        #   and
+        #     * 'alias' in matchex
+        #
         for alias in self.aliases:
 
             if len(self.associated_accounts(alias)) < 2:

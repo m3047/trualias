@@ -182,6 +182,7 @@ class MatchCode(MatchAny):
         self.end_group_size = 0
         while (self.end_group_size + 1) < len(self.anchors) and not self.anchors[-1 - self.end_group_size]:
             self.end_group_size += 1
+        self.min_chars = sum(self.anchors) + len(self.anchors) - 1
         return
 
     def __call__(self, address, start_pos=0, end_pos=None, minimal=False):
@@ -255,6 +256,8 @@ class MatchCode(MatchAny):
         if start_pos >= len(address):
             return False
         if (end_pos + 1) >= len(address):
+            return False
+        if (end_pos - start_pos) + 1 < self.min_chars:
             return False
         return set(address[end_pos-self.end_group_size+2:end_pos+2]) <= MATCH_NUMBER
     

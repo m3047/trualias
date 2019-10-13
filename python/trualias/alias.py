@@ -48,6 +48,9 @@ class MatchInfo(object):
         self.ambiguous = ambiguous
         return
     
+    def __repr__(self):
+        return '<MatchInfo: delivery_account:{}, built_match:{}, ambiguous:{}>'.format(self.delivery_account, self.built_match, self.ambiguous)
+    
 class SpecMatch(object):
     """Represents a match against a definition.
     
@@ -100,6 +103,9 @@ class Literal(object):
         self.params = params
         return
     
+    def __repr__(self):
+        return '<Literal "{}">'.format(''.join((str(part) for part in self.parts)))
+    
     def __str__(self):
         i = 0
         parts = self.parts      # Actually modified in place.
@@ -124,12 +130,12 @@ class Sketch(object):
         self.sketch = []
         sketch = TestableIterator(sketch)
         while sketch():
-            parts = [ sketch.next() ]
+            parts = [ sketch.next() ]   # literal
             subs = []
             while sketch():
-                if sketch.next(lookahead=True) not in self.params:
+                if sketch.next(lookahead=True).name not in self.params:
                     break
-                subs.append( sketch.next() )
+                subs.append( sketch.next().name )
                 parts.append( sketch.next() )
             self.sketch.append( Literal(parts, subs, self.params) )
             if sketch():
@@ -346,6 +352,7 @@ class MatchExpression(object):
         Return value:
             An IdentifierList of lists for all possible matches.
         """
+        #print('  {}{}  {},{}'.format(' '*i, sketch, i, start_pos))
         # Success is when we consumed both the sketch and the address at the same time.
         at_the_end = 0
         at_the_end += (i + 1) >= len(sketch)
@@ -367,10 +374,10 @@ class MatchExpression(object):
 
         end_lit = (len(sketch) > (i + 2)) and str(sketch[i+2]) or None
         end_offset = start_pos
-            
+        
         matches = IdentifierList(False)
         matched = BasicBooleanResult()
-            
+        
         while end_offset < len(address):
 
             if end_lit:
@@ -384,20 +391,22 @@ class MatchExpression(object):
                 ident_value = address[start_pos:end_offset]
                 end_offset += len(end_lit)
             else:
-                if not sketch[i+1].match_one_more(address, start_pos, end_offset-1):
-                    return matches
-
                 end_offset += 1
-                ident_value = address[start_pos:end_offset+1]
+                if not sketch[i+1](address, start_pos, end_offset-1):
+                    continue
+
+                ident_value = address[start_pos:end_offset]
             
             if matched(self.match_sketch(sketch, address, i+2, end_offset)).success:
                 matches.append( sketch[i+1], ident_value, matched.result)
         
+        #print('  {}{}'.format(' '*i, matches))
         return matches
     
     def match(self, calc, accounts, aliases, address):
         """Tests whether or not the passed address can be resolved to a deliverable address or not."""
 
+        #print('{}... {}  {}'.format(self.expression_,accounts,aliases))
         try:
             # First do a quick test to see if we can match the sketch.
             # The way this works is we do generalized matching after anchoring literals.
@@ -415,7 +424,9 @@ class MatchExpression(object):
         for account in accounts or ['']:
             for alias in aliases or ['']:
                 try:
+                    #print('             sketch.using({}, {})'.format(account,alias))
                     matched = self.match_sketch( sketch.using( account, alias ), address)
+                    #print('               matched {}'.format(matched))
                     if not matched:
                         continue
                     # Calculate the verification code. matched.unpack() returns (Identifier, [Identifier...])
@@ -425,7 +436,9 @@ class MatchExpression(object):
                             # TODO: This should never happen. It's kind of like an assertion fail.
                             logging.warning('Empty code matching "{}" against "{}".'.format(address, self.expression_))
                             continue
+                        #print('               calculating {}, {}'.format(code, idents))
                         if calc.calculate(code,idents):
+                            #print('               verified!'.format(code, idents))
                             verified.append(idents)
                     
                     if verified:
@@ -646,6 +659,7 @@ class Alias(object):
     def match(self, name):
         """See if the name matches our match expression."""
         matches = self.matchex.match(self.calc, self.accounts, self.aliases, name)
+        #print('{} -> {}'.format(self.matchex.expression_, matches))
         if not matches:
             return []
         return [ SpecMatch(self, matches) ]
