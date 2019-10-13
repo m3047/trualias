@@ -21,7 +21,8 @@ statement in a configuration. (See parser.)
 
 import logging
 
-from . import ConfigurationError, TestableIterator, BasicBooleanResult
+from .config_base import ConfigurationError
+from .utils import TestableIterator, BasicBooleanResult
 from .matching import *
 
 class SemanticError(ConfigurationError):

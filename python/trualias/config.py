@@ -21,7 +21,7 @@ from_text() is provided to parse a configuration from text.
 
 import logging
 
-from . import ConfigurationError, Loader, DEFAULT_CONFIG
+from .config_base import ConfigurationError, Loader, DEFAULT_CONFIG
 from .alias import SemanticError
 from .parser import StreamParsingLoader
 

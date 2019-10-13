@@ -17,9 +17,8 @@ import logging
 from ipaddress import ip_address
 from io import StringIO
 
-from . import ConfigurationError, Loader, DEFAULT_CONFIG
+from .config_base import ConfigurationError, Loader, DEFAULT_CONFIG
 from .alias import Alias
-
 
 class ParseError(ConfigurationError):
     """A parsing error occurred."""
