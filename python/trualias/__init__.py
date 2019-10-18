@@ -46,4 +46,4 @@ There are two methods here which you generally need to "make it go":
 from .config import from_text as load_config
 from .lookup import find
 from .config_base import CASE_SENSITIVE, HOST, PORT, LOGGING, DEBUG_ACCOUNT
-    
+

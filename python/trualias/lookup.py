@@ -51,10 +51,10 @@ def find(name, config):
     # one.
     if delivery_account:
         if ambiguous:
-            logging.log(config.logging, '{} ambiguous but deliverable to {}'.format(name, delivery_account))
+            logging.warning('{} ambiguous but deliverable to {}'.format(name, delivery_account))
         return delivery_account
 
-    logging.log(config.logging, '{} ambiguous, delivered to the debug account {}'.format(name, config.debug_account))
+    logging.warning('{} ambiguous, delivered to the debug account {}'.format(name, config.debug_account))
     return config.debug_account
  
  

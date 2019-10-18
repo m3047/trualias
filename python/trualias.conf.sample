@@ -1,0 +1,11 @@
+LOGGING: info
+DEBUG ACCOUNT: debug_account
+
+ACCOUNT foo, bar
+MATCHES %account%-%alnum%-%code%
+WITH DIGITS(), ANY(), VOWELS();
+
+ACCOUNT foo
+ALIASED griselda, pinky
+MATCHES %alias%-%ident%-%code%
+WITH ANY(), ANY(), CHAR(1,*);
