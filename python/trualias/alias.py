@@ -400,12 +400,11 @@ class MatchExpression(object):
         while end_offset < len(address):
 
             if end_lit:
-                if not address[end_offset:].startswith(end_lit):
+                if not (address[end_offset:].startswith(end_lit)
+                    and sketch[i+1](address, start_pos, end_offset-1)
+                       ):
                     end_offset += 1
                     continue
-                # Exact match for what's between the lits?
-                if not sketch[i+1](address, start_pos, end_offset-1):
-                    return matches
 
                 ident_value = address[start_pos:end_offset]
                 end_offset += len(end_lit)

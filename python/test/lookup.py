@@ -42,6 +42,14 @@ CONFIG = """
     ACCOUNT bar
     MATCHES %alpha%8ball%code%
     WITH CHAR(1,2,*), CHARS(1);
+
+    ACCOUNT baz
+    MATCHES %alpha%is%alpha%.%code%
+    WITH CHARS(1), CHARS(2);
+
+    ACCOUNT baz
+    MATCHES %alpha%x%alpha%.%code%
+    WITH VOWELS(1), DIGITS(2);
 """
 
 class TestAliasNameLookup(unittest.TestCase):
@@ -76,6 +84,18 @@ class TestAliasNameLookup(unittest.TestCase):
         self.assertEqual(self.looker.find('magic8balla5'),'bar')
         return
     
+    def test_isisisisis(self):
+        self.assertEqual(self.looker.find('isisisisis.44'),'baz')
+        return
+
+    def test_xxx_good(self):
+        self.assertEqual(self.looker.find('isisxisis.20'),'baz')
+        return
+
+    def test_xxx_ambiguous_good(self):
+        self.assertEqual(self.looker.find('xxxxxx.00'),'baz')
+        return
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
     
