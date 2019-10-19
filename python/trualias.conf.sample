@@ -9,3 +9,7 @@ ACCOUNT foo
 ALIASED griselda, pinky
 MATCHES %alias%-%ident%-%code%
 WITH ANY(), ANY(), CHAR(1,*);
+
+ACCOUNT baz
+MATCHES %alpha%is%alpha%.%code%
+WITH CHARS(1), CHARS(2);
