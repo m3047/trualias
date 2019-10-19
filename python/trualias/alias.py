@@ -17,6 +17,12 @@
 
 The Alias is the key part of a configuration, and maps to one ACCOUNT
 statement in a configuration. (See parser.)
+
+The PRINT_... constants control various debugging output. They can be
+set to a print function which accepts a string, for example:
+
+    PRINT_THIS = logging.debug
+    PRINT_THAT = print
 """
 
 import logging
@@ -24,6 +30,17 @@ import logging
 from .config_base import ConfigurationError
 from .utils import TestableIterator, BasicBooleanResult
 from .matching import *
+
+# Final result for the sketch.
+PRINT_ALIAS_MATCH = None
+# Start of MatchExpression.match()
+PRINT_MATCH_ENTRY = None
+# Details of code calculation.
+PRINT_CALC_CODE = None
+# Computed values of calculations.
+PRINT_CALC_VALUE = None
+# Details of match recursion.
+PRINT_MATCH_SKETCH = None
 
 class SemanticError(ConfigurationError):
     """A semantic error occurred."""
@@ -353,7 +370,8 @@ class MatchExpression(object):
         Return value:
             An IdentifierList of lists for all possible matches.
         """
-        #print('  {}{}  {},{}'.format(' '*i, sketch, i, start_pos))
+        if PRINT_MATCH_SKETCH:
+            PRINT_MATCH_SKETCH('  {}{}  {},{}'.format(' '*i, sketch, i, start_pos))
         # Success is when we consumed both the sketch and the address at the same time.
         at_the_end = 0
         at_the_end += (i + 1) >= len(sketch)
@@ -401,13 +419,14 @@ class MatchExpression(object):
             if matched(self.match_sketch(sketch, address, i+2, end_offset)).success:
                 matches.append( sketch[i+1], ident_value, matched.result)
         
-        #print('  {}{}'.format(' '*i, matches))
+        if PRINT_MATCH_SKETCH:
+            PRINT_MATCH_SKETCH('  {}{}'.format(' '*i, matches))
         return matches
     
     def match(self, calc, accounts, aliases, address):
         """Tests whether or not the passed address can be resolved to a deliverable address or not."""
-
-        #print('{}... {}  {}'.format(self.expression_,accounts,aliases))
+        if PRINT_MATCH_ENTRY:
+            PRINT_MATCH_ENTRY('{}... {}  {}'.format(self.expression_,accounts,aliases))
         try:
             # First do a quick test to see if we can match the sketch.
             # The way this works is we do generalized matching after anchoring literals.
@@ -425,9 +444,11 @@ class MatchExpression(object):
         for account in accounts or ['']:
             for alias in aliases or ['']:
                 try:
-                    #print('             sketch.using({}, {})'.format(account,alias))
+                    if PRINT_MATCH_SKETCH:
+                        PRINT_MATCH_SKETCH('             sketch.using({}, {})'.format(account,alias))
                     matched = self.match_sketch( sketch.using( account, alias ), address)
-                    #print('               matched {}'.format(matched))
+                    if PRINT_MATCH_SKETCH:
+                        PRINT_MATCH_SKETCH('               matched {}'.format(matched))
                     if not matched:
                         continue
                     # Calculate the verification code. matched.unpack() returns (Identifier, [Identifier...])
@@ -437,9 +458,11 @@ class MatchExpression(object):
                             # TODO: This should never happen. It's kind of like an assertion fail.
                             logging.warning('Empty code matching "{}" against "{}".'.format(address, self.expression_))
                             continue
-                        #print('               calculating {}, {}'.format(code, idents))
+                        if PRINT_CALC_CODE:
+                            PRINT_CALC_CODE('               calculating {}, {}'.format(code, idents))
                         if calc.calculate(code,idents):
-                            #print('               verified!'.format(code, idents))
+                            if PRINT_CALC_CODE:
+                                PRINT_CALC_CODE('               verified!'.format(code, idents))
                             verified.append(idents)
                     
                     if verified:
@@ -484,6 +507,7 @@ def func_char(code,args,identifiers):
     i_is_arg0 = 0
     i_is_arg0 += len(args) > 2 and len(args) - 2 or 0
     i_is_arg0 += len(identifiers) > 1
+    i_is_arg0 += len(identifiers) == 1 and identifiers[0].type != 'fqdn'
     if i_is_arg0 > 1:
         i = args.next()
     else:
@@ -616,6 +640,8 @@ class CalcExpression(object):
             if not code:
                 return False
             fv = self.FUNCS[calc[0]]( code, calc[1:], identifiers )
+            if PRINT_CALC_VALUE:
+                PRINT_CALC_VALUE('{}({},{}) -> {}'.format(calc[0], code, calc[1:], fv))
             if not fv:
                 return False
             if code.startswith(fv):
@@ -660,7 +686,8 @@ class Alias(object):
     def match(self, name):
         """See if the name matches our match expression."""
         matches = self.matchex.match(self.calc, self.accounts, self.aliases, name)
-        #print('{} -> {}'.format(self.matchex.expression_, matches))
+        if PRINT_ALIAS_MATCH:
+            PRINT_ALIAS_MATCH('{} -> {}'.format(self.matchex.expression_, matches))
         if not matches:
             return []
         return [ SpecMatch(self, matches) ]

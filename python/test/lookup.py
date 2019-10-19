@@ -38,6 +38,10 @@ CONFIG = """
     ALIASED griselda, pinky
     MATCHES %alias%-%ident%-%code%
     WITH ANY(), ANY(), CHAR(1,*);
+    
+    ACCOUNT bar
+    MATCHES %alpha%8ball%code%
+    WITH CHAR(1,2,*), CHARS(1);
 """
 
 class TestAliasNameLookup(unittest.TestCase):
@@ -66,6 +70,10 @@ class TestAliasNameLookup(unittest.TestCase):
 
     def test_alias_griselda(self):
         self.assertEqual(self.looker.find('griselda-23-skidoo-3k2'),'foo')
+        return
+    
+    def test_8ball(self):
+        self.assertEqual(self.looker.find('magic8balla5'),'bar')
         return
     
 if __name__ == '__main__':
