@@ -101,10 +101,10 @@ src/local/alias.c:
 The following worked for me. In particular, note that `-DNO_NIS` was required.
 
 ```
-cd postfix_source/postfix
-make -f Makefile.init makefiles
-make makefiles CCARGS="-DNO_NIS"
-make 
+# cd postfix_source/postfix
+# make -f Makefile.init makefiles
+# make makefiles CCARGS="-DNO_NIS"
+# make 
 ```
 
 **4) Replace `local` with the new version**
@@ -113,7 +113,7 @@ First you have to find it. It will be a file named `local`. HINT: Easiest way to
 package manager to find out where it is, for instance:
 
 ```
- rpm -q -l postfix-3.3.1-lp150.12.1.x86_64 | grep local
+# rpm -q -l postfix-3.3.1-lp150.12.1.x86_64 | grep local
 /usr/lib/postfix/bin/local
 /usr/share/man/man8/local.8.gz
 ```
@@ -121,7 +121,7 @@ package manager to find out where it is, for instance:
 shows us that the program is in `/usr/lib/postfix/bin/`. Overwrite that one with the one you just built:
 
 ```
-cp postfix_source/postfix/libexec/local /usr/lib/postfix/bin/
+# cp postfix_source/postfix/libexec/local /usr/lib/postfix/bin/
 ```
 
 ### Download and setup with systemd
