@@ -18,7 +18,9 @@ Inside of `main.cf` the only thing you need to do in a vanilla installation is a
 alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
 ```
 
-Look in the `install/` and `python/` directories for further information about installation and setup.
+Look in the `install/` and `python/` directories for further information about installation and setup. Because current
+policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases, you will need to
+recompile and replace `local(8)`; instructions are provided.
 
 ### Some examples
 
@@ -43,6 +45,17 @@ ALIASED joe
 MATCHES "%alias%-%alnum%-%code%
 WITH CHAR(1,1,-), CHARS()
 ```
+You will quickly discover that you're not allowed to put certain things right next to each other, because they
+will be rejected as semantically ambiguous, for instance `%alpha%%alpha%` is not allowed. But you can use literals to
+separate them, for instance `%alpha%is%alpha%` as in the following rule, which will match `samissexy.34`:
+
+```
+ACCOUNT baz
+MATCHES %alpha%is%alpha%.%code%
+WITH CHARS(1), CHARS(2);
+```
+
+This also demonstrates resolution to an account for which neither an account or alias is specified.
 
 Let's be honest, this is broken crypto for a broken internet. Nobody is doing SHA or MD5 in their head. But this is policy, not security: in other words we don't need to verifiably block every single bogus email forever, we just need to make the miscreant's jobs difficult enough that they move on to softer targets. Different people have different levels of mental facility with number and word games; some people have none at all (sorry, this may not be the tool for you). Part of the strength of this scheme is that everyone gets to choose a somewhat different format.
 
