@@ -18,7 +18,9 @@ Inside of `main.cf` the only thing you need to do in a vanilla installation is a
 alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
 ```
 
-Look in the `install/` and `python/` directories for further information about installation and setup.
+Look in the `install/` and `python/` directories for further information about installation and setup. Because current
+policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases, you will need to
+recompile and replace `local(8)`; instructions are provided.
 
 ### Some examples
 
