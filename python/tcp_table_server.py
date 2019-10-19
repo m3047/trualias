@@ -126,7 +126,6 @@ class CoroutineContext(object):
             if not request:
                 continue
             if validated(self.validate_request(request)).success:
-                # TODO: Is the lookup key just the local account or a fully qualified email address?
                 delivery_address = trualias.find(request[1], self.config)
                 if delivery_address:
                     response = '200 {}\n'.format(delivery_address)
