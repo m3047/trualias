@@ -79,7 +79,7 @@ We make it easy to tailor the format of the alias and to compute a checkum which
 * `ANY()` Any character in an identifier.
 * `CHAR()` The character at a certain position in an identifier.
 
-## I don't want to patch =postfix= is there anything I can do?
+## I don't want to patch `postfix` is there anything I can do?
 
 If you _are_ wildcarding a domain or stemming an account and you're using a filtering program such as procmail,
-you can still filter on the =Delivery-Account:=. See =/install/procmailrc= as one example.
+you can still filter on the `Delivery-Account:`. See `/install/procmailrc` as one example.
