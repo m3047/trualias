@@ -147,3 +147,8 @@ Edit `/etc/postfix/main.cf` and append `tcp:127.0.0.1:3047` to `alias_maps`:
 ```
 alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
 ```
+
+# Example `procmailrc`
+
+The supplied procmailrc file demonstrates how to extract the address which the mail message was delivered for,
+query the table service with postmap, and use that to create an `X-Alias:` header which is added to the mail message.
