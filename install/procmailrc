@@ -23,5 +23,6 @@ DELIVERY_ADDRESS=| formail -X"Delivered-To:" | perl -ne 'm/^Delivered-To:\s+([^@
 ALIAS=`/usr/sbin/postmap -q "$DELIVERY_ADDRESS" tcp:127.0.0.1:3047`
 
 :0 h H f w
+* ? test -n "$ALIAS"
 | formail -A"X-Aliased: $ALIAS"
 
