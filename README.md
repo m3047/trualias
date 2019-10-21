@@ -2,11 +2,17 @@
 
 _Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
 
-Mentally computable verification codes for email aliases implemented as a postfix tcp table.
+Trualias is a postfix tcp table that lets you hand out your email address to anyone and everyone but add a bit of math to
+protect yourself while doing so.
 
-These days everybody wants an email address. If you give everybody your main email account, it will become unusable. A lot of people create a second email account which they use for "commercial" purposes. The more sophisticated create aliases, and some of us go as far as [wildcarding an entire domain](https://lewman.blog/2019/09/02/why-i-have-over-one-thousand-personal-email-addresses/).
+These days every vendor, grocery store, and app wants to register you with an email address so they can offer better service
+(and track you). Most people either use their primary address which eventually gets flooded or create a second email account
+which they use for "commercial" purposes. Trualias is a more sophisticated way to create aliases as an alternative to
+[wildcarding an entire domain](https://lewman.blog/2019/09/02/why-i-have-over-one-thousand-personal-email-addresses/) which also lets you conveniently track the trackers!
 
-The reason people opt for the more sophisticated approaches is that it enables tracking the trackers. But creating aliases or accounts beforehand is problematic (a problem that a wildcarded domain solves); and a wildcarded domain lets you make stuff up on the fly but there's no easy way to determine whether or not you're the one who gave out a particular alias. Wildcarding a domain also commits you to receiving all of the emails, regardless of whether the alias is bogus or not.
+Creating aliases or accounts every time you need to register for something or give out your email is a lot of work and annoying.
+This is why Trualias lets you make up a "new" email address (alias) on the fly. Wildcarding a domain means you receive every single email sent to the domain and there's no easy way to determine whether or not you handed out a particular alias or not. We need a bit more error correction to make that determination. What's the error checking? An easy,
+mentally-calculable checksum to add at the end of the alias.
 
 ### Postfix tcp tables
 
