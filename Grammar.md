@@ -125,7 +125,11 @@ The following functions are available:
 * `CHARS({n})` Count of characters.
 * `VOWELS({n})` Count of vowels.
 * `ANY({n})` Any character in an identifier (turns it into a character set).
+* `NONE({n})` Any character not in an identifier -- still has to be valid for the identifier.
 * `CHAR({n},{label},index,default)` The character at a certain position in an identifier.
+
+NOTE: `NONE()` has to be valid for the type of identifier. For example if the type is `number` then the character
+needs to be a _digit_ which is not in the identifier.
 
 **Multiple identifiers:** It is possible to perform more than one identifier match in a match expression. For instance
 the following two expressions are (almost) identical:

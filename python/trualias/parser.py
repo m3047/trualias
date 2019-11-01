@@ -76,7 +76,7 @@ class StreamParsingLoader(Loader):
             'LOGGING': ('logging', to_loglevel),
             'DEBUG ACCOUNT': ('debug_account', to_account)
         }
-    CALC_FUNC_NAMES = set('DIGITS ALPHAS LABELS CHARS VOWELS ANY CHAR'.split())
+    CALC_FUNC_NAMES = set('DIGITS ALPHAS LABELS CHARS VOWELS ANY NONE CHAR'.split())
     
     def __init__(self, fh):
         """Create a loader for the supplied filehandle."""

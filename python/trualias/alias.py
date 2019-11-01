@@ -252,7 +252,7 @@ class MatchExpression(object):
                        )
     FRIENDLIES = { 'alpha', 'number' }
     
-    MATCH_ANY_CHAR = { 'ANY', 'CHAR' }
+    MATCH_ANY_CHAR = { 'ANY', 'NONE', 'CHAR' }
     
     def __init__(self):
         self.account_matcher = self.DEFAULT_ACCOUNT_MATCH
@@ -499,6 +499,10 @@ def func_any(code,args,identifiers):
     i = args and args[0] or 1
     return code[0] in identifiers[i-1].value and code[0] or None
 
+def func_none(code,args,identifiers):
+    i = args and args[0] or 1
+    return code[0] not in identifiers[i-1].value and code[0] or None
+
 def func_char(code,args,identifiers):
     """ This is the only one which has more than one possible argument..."""
     args = TestableIterator(args)
@@ -614,6 +618,7 @@ class CalcExpression(object):
                 CHARS=func_chars,
                 VOWELS=func_vowels,
                 ANY=func_any,
+                NONE=func_none,
                 CHAR=func_char
         )
 

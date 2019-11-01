@@ -334,6 +334,19 @@ class TestCalcFunctions(unittest.TestCase):
         self.assertEqual(len(matched),1)
         return
 
+    def test_none(self):
+        """
+        ACCOUNT foo
+        MATCHES %account%-%ident%+%fqdn%+%code%
+        WITH NONE(1);
+        """
+        alias = parse(self.test_none.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo-party1999+m3047.net+z')
+        self.assertEqual(len(matched),1)
+        return
+
     def test_char(self):
         """
         ACCOUNT foo
