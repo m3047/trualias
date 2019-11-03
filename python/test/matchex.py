@@ -253,6 +253,38 @@ class TestMoreSketchCases(unittest.TestCase):
 
         return
 
+    def test_code_middle(self):
+        """Code as the middle token."""
+        alias = parse("""
+            ACCOUNT foo
+            MATCHES %account%-%code%-%ident%
+            WITH CHARS(1),ANY();
+        """)[0]
+        matches = alias.match('foo-3a-bar')
+
+        self.assertEqual(len(matches),1)
+        self.assertEqual(len(matches[0].matches),1)
+        self.assertFalse(matches[0].ambiguous())
+        self.assertEqual(matches[0].delivery_account(),'foo')
+
+        return
+
+    def test_code_first(self):
+        """Code as the first token."""
+        alias = parse("""
+            ACCOUNT foo
+            MATCHES %code%-%ident%-%account%
+            WITH CHARS(1),ANY();
+        """)[0]
+        matches = alias.match('3a-bar-foo')
+
+        self.assertEqual(len(matches),1)
+        self.assertEqual(len(matches[0].matches),1)
+        self.assertFalse(matches[0].ambiguous())
+        self.assertEqual(matches[0].delivery_account(),'foo')
+
+        return
+
 class TestCalcFunctions(unittest.TestCase):
     """Test the defined calc functions."""
     
