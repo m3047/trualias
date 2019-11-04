@@ -131,6 +131,12 @@ The following functions are available:
 NOTE: `NONE()` has to be valid for the type of identifier. For example if the type is `number` then the character
 needs to be a _digit_ which is not in the identifier.
 
+**One-Based indexing:** Indexing of identifiers, labels and characters is _one-based_ meaning that the first element
+is element 1. Coding types (like me) oftentimes expect to see _zero-based_ indexing, where the first element is element 0.
+
+`CHAR()` also allows negative indexing just for the character offset, which is also one-based (which will confuse coding
+types even more because that's the way they expect it to work).
+
 **Multiple identifiers:** It is possible to perform more than one identifier match in a match expression. For instance
 the following two expressions are (almost) identical:
 

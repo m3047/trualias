@@ -392,6 +392,19 @@ class TestCalcFunctions(unittest.TestCase):
         self.assertEqual(len(matched),1)
         return
 
+    def test_char_neg_index(self):
+        """
+        ACCOUNT foo
+        MATCHES %account%-%ident%+%code%
+        WITH CHAR(1,-1,*),CHAR(1,-3,*),CHAR(1,-5,*);
+        """
+        alias = parse(self.test_char_neg_index.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo-party1999+99y')
+        self.assertEqual(len(matched),1)
+        return
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
     

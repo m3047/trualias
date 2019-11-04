@@ -524,8 +524,12 @@ def func_char(code,args,identifiers):
     identifier = identifiers[i-1].value
     if identifiers[i-1].type == 'fqdn':
         identifier = identifier.split('.')[label-1]
-    
-    return len(identifier) > char and identifier[char-1] or default
+        
+    if abs(char) > len(identifier):
+        return default
+    if char > 0:
+        char -= 1       # one-based
+    return identifier[char]
     
 class CalcExpression(object):
     """A Calculation Expression.
