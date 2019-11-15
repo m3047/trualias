@@ -405,6 +405,32 @@ class TestCalcFunctions(unittest.TestCase):
         self.assertEqual(len(matched),1)
         return
 
+    def test_char_bad_label_index(self):
+        """
+        ACCOUNT bar
+        MATCHES %account%.%fqdn%.%code%
+        WITH ANY(), VOWELS(), CHAR(2,2,*);
+        """
+        alias = parse(self.test_char_bad_label_index.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*')
+        self.assertEqual(len(matched),1)
+        return
+
+    def test_char_bad_label_negative_index(self):
+        """
+        ACCOUNT bar
+        MATCHES %account%.%fqdn%.%code%
+        WITH ANY(), VOWELS(), CHAR(-2,2,*);
+        """
+        alias = parse(self.test_char_bad_label_negative_index.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*')
+        self.assertEqual(len(matched),1)
+        return
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
     

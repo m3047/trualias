@@ -523,7 +523,12 @@ def func_char(code,args,identifiers):
     
     identifier = identifiers[i-1].value
     if identifiers[i-1].type == 'fqdn':
-        identifier = identifier.split('.')[label-1]
+        labels = identifier.split('.')
+        if abs(label) > len(labels):
+            return default
+        if label > 0:
+            label -= 1
+        identifier = labels[label]
         
     if abs(char) > len(identifier):
         return default
