@@ -2,7 +2,7 @@
 
 Copy `trualias.conf.sample` to `trualias.conf` and you should be able to run `tcp_table_server.py`.
 
-It will listen on `127.0.0.1:3047` by default, and you should be able to query it with `postmap`:
+It will listen on `127.0.0.1:3047` by default, and you should be able to query it with [`postmap`](http://www.postfix.org/postmap.1.html):
 
 ```
 # postmap -q "samissexy.34" tcp:127.0.0.1:3047
