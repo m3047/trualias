@@ -1,6 +1,8 @@
 # Installation
 
-_Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
+_Copyright (c) 2019-2020 Fred Morris, Tacoma WA. Apache 2.0 license._
+
+If you're running as a milter, go to the [MILTER_README](https://github.com/m3047/trualias/blob/master/install/MILTER_README.md).
 
 ### Assumptions
 
