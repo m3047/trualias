@@ -1,5 +1,8 @@
 LOGGING: info
 DEBUG ACCOUNT: debug_account
+# These are the address and port to listen on; the defaults are shown.
+# HOST: 127.0.0.1
+# PORT: 3047
 
 ACCOUNT foo, bar
 MATCHES %account%-%alnum%-%code%

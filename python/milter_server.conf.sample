@@ -1,0 +1,33 @@
+LOGGING: info
+DEBUG ACCOUNT: debug_account
+#
+# These are the address and port the milter should listen on; the defaults
+# are shown.
+# HOST: 127.0.0.1
+# PORT: 3047
+
+#
+# The following are specifically for the milter server, you should review
+# them carefully!
+#
+# These are the hostaddress and port for the SMTP service providing VRFY
+SMTP HOST: 127.0.0.1
+SMTP PORT: 5025
+# This is our local hostname, potentially providing context during VRFY.
+LOCAL HOST: mail.example.com
+# This is a space-separated list of the domains which we should consider local
+# and should match whatever VRFY is using.
+LOCAL DOMAINS: example.com asia.example.com na.example.com
+
+ACCOUNT foo, bar
+MATCHES %account%-%alnum%-%code%
+WITH DIGITS(), ANY(), VOWELS();
+
+ACCOUNT foo
+ALIASED griselda, pinky
+MATCHES %alias%-%ident%-%code%
+WITH ANY(), ANY(), CHAR(1,*);
+
+ACCOUNT baz
+MATCHES %alpha%is%alpha%.%code%
+WITH CHARS(1), CHARS(2);
