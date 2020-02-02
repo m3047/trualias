@@ -24,9 +24,28 @@ Inside of `main.cf` the only thing you need to do in a vanilla installation is a
 alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
 ```
 
-Look in the `install/` and `python/` directories for further information about installation and setup. Because current
+Look in the `install/` and `python/` directories for further information about installation and setup.
+
+Because current
 policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases, you will need to
 recompile and replace `local(8)`; instructions are provided.
+
+### Milter server
+
+There is also a _milter_ implementation. It doesn't get as much love, because quite frankly I have no concerns
+or difficulties recompiling and replacing `local(8)` and the TCP table solution works perfectly with _Postfix_ `local_recipient_maps` and rejects recipients during the SMTP `RCPT` exchange.
+
+_Postfix_ has some issues with milters. For starters, although the milter protocol supports rejecting recipients
+during SMTP `RCPT`, it doesn't support rewriting them until EOB (end of message). In reality the milter protocol
+is capable of fast-forwarding in the case of envelope-only operations and by fast-forwarding recipient
+rewriting could occur during SMTP `RCPT`, but it doesn't get implemented that way.
+
+Partly as a consequence of this, `local_recipient_maps` cannot be utilized. They're processed first and the
+milter implementation makes it impossible (pointless) to process them afterwards. Because `local_recipient_maps`
+is not a viable option, the milter makes use of SMTP `VRFY` to validate local delivery which has its own issues.
+See [install/MILTER_README.md](https://github.com/m3047/trualias/blob/fwm/install/MILTER_README.md) for futher
+details regarding configuring the milter server with _Postfix_. The code has been written with replacing `VRFY`
+with some other source of local account / identity truth in mind.
 
 ### Some examples
 
@@ -90,3 +109,5 @@ We make it easy to tailor the format of the alias and to compute a checkum which
 
 If you _are_ wildcarding a domain or stemming an account and you're using a filtering program such as procmail,
 you can still filter on the `Delivery-Account:`. See `/install/procmailrc` as one example.
+
+You can also run it as a milter, but I don't recommend that option unless you're already running milters.
