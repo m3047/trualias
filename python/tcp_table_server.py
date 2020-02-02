@@ -58,11 +58,12 @@ import trualias
 from trualias.utils import WrappedFunctionResult
 
 WATCHDOG_SECONDS = 2
-CONFIG_FILE = 'trualias.conf'
+CONFIG_FILE = ('tcp_table_server.conf','trualias.conf')
 MAX_READ_SIZE = 1024
 
-def config_file():
-    return path.dirname(path.abspath(__file__)) + '/' + CONFIG_FILE
+def config_files():
+    code_path = path.dirname(path.abspath(__file__))
+    return (code_path + '/' + f for f in CONFIG_FILE)
 
 class ValidRequest(WrappedFunctionResult):
     """Valid if the validation function returns nothing."""
@@ -71,9 +72,10 @@ class ValidRequest(WrappedFunctionResult):
 
 class CoroutineContext(object):
     
-    def __init__(self, config):
+    def __init__(self, config, config_file):
         self.config = config
-        self.mtime = os.stat(config_file()).st_mtime
+        self.config_file = config_file
+        self.mtime = os.stat(config_file).st_mtime
         self.peers = set()
         return
 
@@ -86,12 +88,12 @@ class CoroutineContext(object):
         """
         while True:
             await asyncio.sleep(seconds)
-            mtime = os.stat(config_file()).st_mtime
+            mtime = os.stat(self.config_file).st_mtime
             if mtime > self.mtime:
                 self.mtime = mtime
                 logging.info('Reloading configuration.')
                 try:
-                    with open(config_file(), "r") as f:
+                    with open(self.config_file, "r") as f:
                         self.config = trualias.load_config(f, raise_on_error=True)
                 except Exception as e:
                     logging.error('Unable to reload configuration: {}. Continuing to run with old configuration.'.format(e))                
@@ -155,15 +157,24 @@ async def close_readers(readers):
 
 def main():
     try:
-        with open(config_file(), "r") as f:
-            config = trualias.load_config(f, raise_on_error=True)
+        for file_name in config_files():
+            try:
+                with open(file_name, "r") as f:
+                    config = trualias.load_config(f, raise_on_error=True)
+                last_exception = None
+                config_file = file_name
+                break
+            except FileNotFoundError as e:
+                last_exception = e
+        if last_exception:
+            raise e
     except Exception as e:
         logging.fatal('Unable to load configuration: {}'.format(e))
         sys.exit(1)
     
     logging.basicConfig(level=config.logging)
     
-    context = CoroutineContext(config)
+    context = CoroutineContext(config, config_file)
     
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
