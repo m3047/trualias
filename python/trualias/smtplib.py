@@ -24,6 +24,8 @@ import smtplib
 import asyncio
 import logging
 
+import re
+
 TIMEOUT = 10    # seconds
 MAXLINE = 1024
 CRLF = "\r\n"
