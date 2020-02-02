@@ -1,6 +1,6 @@
 # Copy `trualias.conf` and it should run.
 
-Copy `trualias.conf.sample` to `trualias.conf` and you should be able to run `tcp_table_server.py`.
+Copy `tcp_table_server.conf.sample` to `tcp_table_server.conf` and you should be able to run `tcp_table_server.py`.
 
 It will listen on `127.0.0.1:3047` by default, and you should be able to query it with [`postmap`](http://www.postfix.org/postmap.1.html):
 
@@ -28,3 +28,25 @@ get greyisthenewbeige.411
 telnet> quit
 Connection closed.
 ```
+
+## Milters on the other hand...
+
+If you're not already running milters this is probably not a good option for you. If you don't have your head
+wrapped around local delivery accounts and not being an open relay or source of incorrectly addressed blowback,
+it's probably not an option for you: if you rely on _Postfix_ `local_delivery_maps` to keep you out of trouble,
+this is not for you, because they won't work with a milter which has as its sole purpose the rewriting of
+recipients. The milter is written to use SMTP `VRFY` for local delivery validation, which is not an ideal
+solution.
+
+### When are milters a good option?
+
+The milter implementation is a good option if either:
+
+* You are using a _fast forwarding milter executor_ so that recipient edits are visible during the SMTP `RCPT` stage.
+
+-- OR --
+
+* You have a source of deliverable account truth. If you do, you are probably plugging _Postfix_ into it right now. So you'd have to write some code to query that source of truth from the milter. Hopefully not much, we tried to make it easy... `pydoc3 ./milter_server.py` should give you the notes you need to go about it.
+
+
+
