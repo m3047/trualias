@@ -34,7 +34,7 @@ def to_boolean(value):
         raise ValueError('Not a recognized boolean value: {}'.format(orig_value))
     return BOOLEAN_VALUE[value]
 
-def to_host(value):
+def to_address(value):
     return ip_address(value)
 
 def to_port(value):
@@ -68,10 +68,10 @@ class StreamParsingLoader(Loader):
     """
 
     CONFIG_FIRST_WORDS = set('CASE HOST PORT LOGGING DEBUG'.split())
-    CONFIG_SECOND_WORDS = dict(CASE='SENSITIVE',DEBUG='ACCOUNT')
+    CONFIG_SECOND_WORDS = dict(CASE=['SENSITIVE'],DEBUG=['ACCOUNT'])
     CONFIG_MAP = {
             'CASE SENSITIVE': ('case_sensitive', to_boolean),
-            'HOST': ('host', to_host),
+            'HOST': ('host', to_address),
             'PORT': ('port', to_port),
             'LOGGING': ('logging', to_loglevel),
             'DEBUG ACCOUNT': ('debug_account', to_account)
@@ -157,7 +157,7 @@ class StreamParsingLoader(Loader):
             keyword = self.token()
             colon_seen = ':' in keyword
             keyword, more = self.trailing(':',keyword)
-            if keyword != self.CONFIG_SECOND_WORDS[item]:
+            if keyword not in self.CONFIG_SECOND_WORDS[item]:
                 self.parse_error('Unrecognized keyword "{}"'.format(keyword))
             self.token_matched()
             item += ' ' + keyword
