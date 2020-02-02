@@ -184,7 +184,6 @@ class CoroutineContext(object):
         This is the other task you will need to modify if you use some other account
         validation instead of SMTP VRFY.
         """
-        print('Connected, creating server task.')
         smtp = SMTP(self.config.smtp_host, self.config.smtp_port, self.event_loop, self.local_fqdn)
         smtp.future_hello = asyncio.ensure_future(self.say_hello(smtp), loop=self.event_loop)
         milter = MilterServer(smtp, self.domains)
