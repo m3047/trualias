@@ -29,6 +29,44 @@ telnet> quit
 Connection closed.
 ```
 
+### Statistics!
+
+The TCP Map server supports statistics! These can be logged periodically as well as queried for.
+
+Briefly:
+
+* _e_ elapsed seconds
+* _d_ queue depth
+* _n_ number per second
+* _min_ minimum per second
+* _max_ maximum per second
+* _1_ most recent one second
+* _10_ most recent 10 seconds average
+* _60_ most recent 60 seconds average
+
+```
+# telnet athena.m3047.net 3047
+Trying 209.221.140.128...
+Connected to athena.m3047.net.
+Escape character is '^]'.
+foo
+400 unrecognized command
+get foo
+500 not found
+get samissexy.34
+200 baz
+stats
+210 bad: emin=0.0000 emax=0.0000 e1=0.0000 e10=0.0000 e60=0.0000 nmin=0 nmax=1 n1=0.0000 n10=0.0000 n60=0.0167
+212 connections: emin=0.0000 emax=0.0627 e1=0.0000 e10=0.0000 e60=0.0010 dmin=0 dmax=1 d1=1.0000 d10=1.0000 d60=0.2167 nmin=0 nmax=1 n1=0.0000 n10=0.0000 n60=0.0333
+212 not_found: emin=0.0000 emax=0.0001 e1=0.0000 e10=0.0000 e60=0.0000 nmin=0 nmax=1 n1=0.0000 n10=0.1000 n60=0.0167
+212 reads: emin=0.0000 emax=5.4090 e1=0.0000 e10=0.8751 e60=0.1834 dmin=0 dmax=1 d1=1.0000 d10=1.0000 d60=0.2167 nmin=0 nmax=2 n1=0.0000 n10=0.2000 n60=0.1000
+212 stats: emin=0.0000 emax=0.0000 e1=0.0000 e10=0.0000 e60=0.0000 nmin=0 nmax=0 n1=0.0000 n10=0.0000 n60=0.0000
+212 success: emin=0.0000 emax=0.0007 e1=0.0000 e10=0.0001 e60=0.0000 nmin=0 nmax=1 n1=0.0000 n10=0.1000 n60=0.0333
+212 writes: emin=0.0000 emax=0.0001 e1=0.0000 e10=0.0000 e60=0.0000 dmin=0 dmax=0 d1=0.0000 d10=0.0000 d60=0.0000 nmin=0 nmax=1 n1=0.0000 n10=0.2000 n60=0.0667
+jstats
+212 [{"name": "connections", "elapsed": {"minimum": 0.0, "maximum": 0.06274080276489258, "one": 0.0, "ten": 0.0, "sixty": 0.0010456800460815429}, "depth": {"minimum": 0, "maximum": 1, "one": 1, "ten": 1.0, "sixty": 0.8333333333333334}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.03333333333333333}}, {"name": "reads", "elapsed": {"minimum": 0.0, "maximum": 5.409029722213745, "one": 0.0, "ten": 0.0, "sixty": 0.21678426861763}, "depth": {"minimum": 0, "maximum": 1, "one": 1, "ten": 1.0, "sixty": 0.8333333333333334}, "n_per_sec": {"minimum": 0, "maximum": 2, "one": 0, "ten": 0.0, "sixty": 0.11666666666666667}}, {"name": "writes", "elapsed": {"minimum": 0.0, "maximum": 9.918212890625e-05, "one": 0.0, "ten": 0.0, "sixty": 7.673104604085286e-06}, "depth": {"minimum": 0, "maximum": 0, "one": 0, "ten": 0.0, "sixty": 0.0}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.08333333333333333}}, {"name": "success", "elapsed": {"minimum": 0.0, "maximum": 0.0007426738739013672, "one": 0.0, "ten": 0.0, "sixty": 2.3651123046875e-05}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.03333333333333333}}, {"name": "not_found", "elapsed": {"minimum": 0.0, "maximum": 0.00010251998901367188, "one": 0.0, "ten": 0.0, "sixty": 1.708666483561198e-06}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}, {"name": "bad", "elapsed": {"minimum": 0.0, "maximum": 3.910064697265625e-05, "one": 0.0, "ten": 0.0, "sixty": 6.516774495442708e-07}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}, {"name": "stats", "elapsed": {"minimum": 0.0, "maximum": 0.0016276836395263672, "one": 0.0, "ten": 0.0, "sixty": 2.7128060658772786e-05}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}]
+```
+
 ## Milters on the other hand...
 
 If you're not already running milters this is probably not a good option for you. If you don't have your head
