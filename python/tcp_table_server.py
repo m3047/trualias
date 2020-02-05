@@ -173,7 +173,7 @@ class CoroutineContext(object):
                     if self.config.statistics:
                         request_timer.stop('stats')
                 elif verb == 'jstats':
-                    response = '212 ' + json.dumps(self.statistics.stats()) + '\n'
+                    response = '210 ' + json.dumps(self.statistics.stats()) + '\n'
                     if self.config.statistics:
                         request_timer.stop('stats')
             else:
