@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2020 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,13 +53,17 @@ from time import time
 import asyncio
 from concurrent.futures import CancelledError
 import logging
+import json
 
 import trualias
 from trualias.utils import WrappedFunctionResult
+from trualias.statistics import StatisticsFactory, StatisticsCollector, UndeterminedStatisticsCollector
 
 WATCHDOG_SECONDS = 2
 CONFIG_FILE = ('tcp_table_server.conf','trualias.conf')
 MAX_READ_SIZE = 1024
+
+STATISTICS_PRINTER = logging.info
 
 def config_files():
     code_path = path.dirname(path.abspath(__file__))
@@ -72,11 +76,21 @@ class ValidRequest(WrappedFunctionResult):
 
 class CoroutineContext(object):
     
-    def __init__(self, config, config_file):
+    COMMANDS = dict(get=2, stats=1, jstats=1)
+    
+    def __init__(self, config, config_file, statistics):
         self.config = config
         self.config_file = config_file
         self.mtime = os.stat(config_file).st_mtime
         self.peers = set()
+        self.statistics = statistics
+        if config.statistics:
+            self.connection_stats = statistics.Collector('connections')
+            self.read_stats = statistics.Collector('reads')
+            self.write_stats = statistics.Collector('writes')
+            self.request_stats = statistics.Collector(('success','not_found','bad','stats'), 
+                                                      using=UndeterminedStatisticsCollector
+                                                     )
         return
 
     async def configuration_watchdog(self, seconds):
@@ -99,19 +113,27 @@ class CoroutineContext(object):
                     logging.error('Unable to reload configuration: {}. Continuing to run with old configuration.'.format(e))                
         return
     
-    @staticmethod
-    def validate_request(request):
-        if len(request) != 2:
-            return 'improperly formed request'
-        if request[0].lower() != 'get':
+    def validate_request(self, request):
+        verb = request[0].lower()
+        if verb not in self.COMMANDS:
             return 'unrecognized command'
+        if len(request) != self.COMMANDS[verb]:
+            return 'improperly formed request'
+        if verb == 'stats' and not self.config.statistics:
+            return 'statistics disabled'
         return ''
 
     async def handle_requests(self, reader, writer):
+        if self.config.statistics:
+            connection_timer = self.connection_stats.start_timer()
         validated = ValidRequest()
         while True:
             remote_addr = writer.get_extra_info('peername')
+            if self.config.statistics:
+                read_timer = self.read_stats.start_timer()
             data = await reader.readline()
+            if self.config.statistics:
+                read_timer.stop()
             try:
                 message = data.decode()
             except UnicodeDecodeError:
@@ -127,19 +149,48 @@ class CoroutineContext(object):
             request = message.strip().split()
             if not request:
                 continue
+            if self.config.statistics:
+                request_timer = self.request_stats.start_timer()
             if validated(self.validate_request(request)).success:
-                delivery_address = trualias.find(request[1], self.config)
-                if delivery_address:
-                    response = '200 {}\n'.format(delivery_address)
-                else:
-                    response = '500 not found\n'
+                verb = request[0].lower()
+                if   verb == 'get':
+                    delivery_address = trualias.find(request[1], self.config)
+                    if delivery_address:
+                        response = '200 {}\n'.format(delivery_address)
+                        if self.config.statistics:
+                            request_timer.stop('success')
+                    else:
+                        response = '500 not found\n'
+                        if self.config.statistics:
+                            request_timer.stop('not_found')
+                elif verb == 'stats':
+                    code = 210
+                    response = []
+                    for stat in sorted(self.statistics.stats(), key=lambda x:x['name']):
+                        response.append('{} {}'.format(code, format_statistics(stat)))
+                        code = 212
+                    response = '\n'.join(response) + '\n'
+                    if self.config.statistics:
+                        request_timer.stop('stats')
+                elif verb == 'jstats':
+                    response = '212 ' + json.dumps(self.statistics.stats()) + '\n'
+                    if self.config.statistics:
+                        request_timer.stop('stats')
             else:
                 response = '400 {}\n'.format(validated.result)
+                if self.config.statistics:
+                    request_timer.stop('bad')
 
+            if self.config.statistics:
+                write_timer = self.write_stats.start_timer()
             writer.write(response.encode())
             await writer.drain()
+            if self.config.statistics:
+                write_timer.stop()
 
         writer.close()
+        if self.config.statistics:
+            connection_timer.stop()
         return
     
 async def close_watchdog(task):
@@ -153,6 +204,26 @@ async def close_readers(readers):
         await all_readers
     except CancelledError:
         pass
+    return
+
+def format_statistics(stat):
+    if 'depth' in stat:
+        return '{}: emin={:.4f} emax={:.4f} e1={:.4f} e10={:.4f} e60={:.4f} dmin={} dmax={} d1={:.4f} d10={:.4f} d60={:.4f} nmin={} nmax={} n1={:.4f} n10={:.4f} n60={:.4f}'.format(
+                stat['name'],
+                stat['elapsed']['minimum'], stat['elapsed']['maximum'], stat['elapsed']['one'], stat['elapsed']['ten'], stat['elapsed']['sixty'],
+                stat['depth']['minimum'], stat['depth']['maximum'], stat['depth']['one'], stat['depth']['ten'], stat['depth']['sixty'],
+                stat['n_per_sec']['minimum'], stat['n_per_sec']['maximum'], stat['n_per_sec']['one'], stat['n_per_sec']['ten'], stat['n_per_sec']['sixty'])
+    else:
+        return '{}: emin={:.4f} emax={:.4f} e1={:.4f} e10={:.4f} e60={:.4f} nmin={} nmax={} n1={:.4f} n10={:.4f} n60={:.4f}'.format(
+                stat['name'],
+                stat['elapsed']['minimum'], stat['elapsed']['maximum'], stat['elapsed']['one'], stat['elapsed']['ten'], stat['elapsed']['sixty'],
+                stat['n_per_sec']['minimum'], stat['n_per_sec']['maximum'], stat['n_per_sec']['one'], stat['n_per_sec']['ten'], stat['n_per_sec']['sixty'])
+
+async def statistics_report(statistics, frequency):
+    while True:
+        await asyncio.sleep(frequency)
+        for stat in sorted(statistics.stats(), key=lambda x:x['name']):
+            STATISTICS_PRINTER(format_statistics(stat))
     return
 
 def main():
@@ -174,13 +245,15 @@ def main():
     
     logging.basicConfig(level=config.logging)
     
-    context = CoroutineContext(config, config_file)
+    statistics = StatisticsFactory()
+    context = CoroutineContext(config, config_file, statistics)
     
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
     server = loop.run_until_complete(coro)
     watchdog = asyncio.run_coroutine_threadsafe(context.configuration_watchdog(WATCHDOG_SECONDS), loop)
-    
+    if config.statistics and config.statistics > 0:
+        asyncio.run_coroutine_threadsafe(statistics_report(statistics, config.statistics), loop)
     # Serve requests until we're told to exit (Ctrl+C is pressed, a signal, something really bad, etc.)
     logging.info('Serving on {}'.format(server.sockets[0].getsockname()))
     readers = None

@@ -3,6 +3,10 @@ DEBUG ACCOUNT: debug_account
 # These are the address and port to listen on; the defaults are shown.
 # HOST: 127.0.0.1
 # PORT: 3047
+#
+# This controls statistics reporting.
+# 0 or None=no stats, -1=collect but don't report, >0=report interval in seconds
+# STATISTICS: None
 
 ACCOUNT foo, bar
 MATCHES %account%-%alnum%-%code%

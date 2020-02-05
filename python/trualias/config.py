@@ -70,6 +70,10 @@ class Configuration(object):
     def debug_account(self):
         return self.config['debug_account']
     
+    @property
+    def statistics(self):
+        return self.config['statistics']
+    
     def build_maps(self):
         """Builds the internal maps used by lookup methods.
         

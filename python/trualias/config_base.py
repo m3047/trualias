@@ -23,6 +23,7 @@ HOST = ip_address('127.0.0.1')
 PORT = 3047
 LOGGING = logging.WARNING
 DEBUG_ACCOUNT = None
+STATISTICS = None
 
 class Loader(object):
     """Base class for all config generators/loaders."""
@@ -44,7 +45,8 @@ def DEFAULT_CONFIG(minimal=False):
     """A function so that it generates a fresh one every time.
     
     Minimal causes the dictionary to be suitable for updating another
-    config.
+    config. This dictionary contains defaults for all possible parameters
+    for all servers.
     """
     
     if minimal:
@@ -55,7 +57,8 @@ def DEFAULT_CONFIG(minimal=False):
                     host=HOST,
                     port=PORT,
                     logging=LOGGING,
-                    debug_account=DEBUG_ACCOUNT
+                    debug_account=DEBUG_ACCOUNT,
+                    statistics=STATISTICS
                  )
     config['aliases'] = []
     return config

@@ -60,6 +60,13 @@ def to_account(value):
         raise ValueError('Not a valid account: {}'.format(value))
     return value
 
+NO_STATISTICS = {'none','no'}
+
+def to_statistics(value):
+    if value.lower() in NO_STATISTICS:
+        return None
+    return int(value)
+
 class StreamParsingLoader(Loader):
     """Creates a configuration dictionary by parsing a text stream.
     
@@ -67,14 +74,15 @@ class StreamParsingLoader(Loader):
     to override read_line().
     """
 
-    CONFIG_FIRST_WORDS = set('CASE HOST PORT LOGGING DEBUG'.split())
+    CONFIG_FIRST_WORDS = set('CASE HOST PORT LOGGING DEBUG STATISTICS'.split())
     CONFIG_SECOND_WORDS = dict(CASE=['SENSITIVE'],DEBUG=['ACCOUNT'])
     CONFIG_MAP = {
             'CASE SENSITIVE': ('case_sensitive', to_boolean),
             'HOST': ('host', to_address),
             'PORT': ('port', to_port),
             'LOGGING': ('logging', to_loglevel),
-            'DEBUG ACCOUNT': ('debug_account', to_account)
+            'DEBUG ACCOUNT': ('debug_account', to_account),
+            'STATISTICS': ('statistics', to_statistics)
         }
     CALC_FUNC_NAMES = set('DIGITS ALPHAS LABELS CHARS VOWELS ANY NONE CHAR'.split())
     
