@@ -106,7 +106,7 @@ class Matcher(object):
         if (end_pos + 1) >= len(address):
             return False
         if end_pos < start_pos and address[start_pos] not in self.char_sets[0]:
-                return False
+            return False
         if address[end_pos+1] not in self.char_sets[2]:
             return False
         if end_pos > start_pos and address[end_pos] not in self.char_sets[1]:
