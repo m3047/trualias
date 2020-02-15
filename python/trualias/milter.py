@@ -240,7 +240,7 @@ class MilterServer(object):
             return False
         cmd_len = int.from_bytes(buffered[:4], **UNSIGNED_BIG_ENDIAN)
         self.command = await reader.read(cmd_len)
-        if len(buffered) == 0:
+        if len(self.command) == 0:
             return False
         return True
     
