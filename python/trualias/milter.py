@@ -15,7 +15,6 @@
 
 import logging
 import asyncio
-import smtplib
 
 from .parser import StreamParsingLoader, to_boolean, to_address, to_port, to_loglevel, to_account
 from .config import Configuration as BaseConfiguration
