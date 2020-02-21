@@ -15,7 +15,7 @@ as clearly articulated are architectural considerations such as "network connect
 be part of the fabric of the mailer itself.
 
 The "network connections are bad" notion is seen by comparison of various dictionary / mapping implementations
-represesented by the files `src/util/dict*.c`. A concrete example would be that _TCP maps_, represented by
+represented by the files `src/util/dict*.c`. A concrete example would be that _TCP maps_, represented by
 `dict_tcp.c` cannot be utilized with `alias_maps` because `local(8)` rejects their use.
 
 ### The Security Model
@@ -37,7 +37,7 @@ An untrusted mapper such as `dict_tcp.c` can be made trusted by:
 * Not committing suicide when asked; and
 * setting ``dict_x->dict.owner.status = DICT_OWNER_TRUSTED`.
 
-The change is simple and straigntforward enough that it can be reproduced here (the following code is part
+The change is simple and straightforward enough that it can be reproduced here (the following code is part
 of _Postfix_, and subject to the _Secure Mailer License_), from `src/util/dict_tcp.c`:
 
 ```
