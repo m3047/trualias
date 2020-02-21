@@ -20,7 +20,7 @@ risk. THE SECURITY RISKS ASSOCIATED WITH DISABLING THESE SECURITY CHECKS DEPENDS
 POSTURE; USE AT YOUR OWN RISK.
 
 Until distributions pick this up, you need to compile a custom version of `local` and replace the one which
-comes with your _Linux_ distribution.
+comes with your _Linux_ distribution. For further analysis of the security implications, see [table_security_analysis.md](https://github.com/m3047/trualias/blob/master/install/table_security_analysis.md)
 
 **1) Clone the source**
 
@@ -28,10 +28,9 @@ Clone the repository https://github.com/vdukhovni/postfix
 
 **2) Edit the files**
 
-Edit the following two files, commenting out the indicated lines.
+Edit `src/util/dict_tcp.c`, commenting out the indicated lines and adding the line at the end:
 
 ```
-src/util/dict_tcp.c:
 292,295c292,295
 <     if (dict_flags & DICT_FLAG_NO_UNAUTH)
 <       return (dict_surrogate(DICT_TYPE_TCP, map, open_flags, dict_flags,
@@ -42,60 +41,9 @@ src/util/dict_tcp.c:
 > //    return (dict_surrogate(DICT_TYPE_TCP, map, open_flags, dict_flags,
 > //                 "%s:%s map is not allowed for security sensitive data",
 > //                           DICT_TYPE_TCP, map));
-
-src/local/alias.c:
-205c205
-<           if (dict->owner.status == DICT_OWNER_TRUSTED) {
----
-> //        if (dict->owner.status == DICT_OWNER_TRUSTED) {
-208,230c208,230
-<           } else {
-<               if (dict->owner.status == DICT_OWNER_UNKNOWN) {
-<                   msg_warn("%s: no owner UID for alias database %s",
-<                            myname, *cpp);
-<                   dsb_simple(state.msg_attr.why, "4.3.0",
-<                              "mail system configuration error");
-<                   *statusp = defer_append(BOUNCE_FLAGS(state.request),
-<                                           BOUNCE_ATTR(state.msg_attr));
-<                   return (YES);
-<               }
-<               if ((errno = mypwuid_err(dict->owner.uid, &alias_pwd)) != 0
-<                   || alias_pwd == 0) {
-<                   msg_warn(errno ?
-<                            "cannot find alias database owner for %s: %m" :
-<                          "cannot find alias database owner for %s", *cpp);
-<                   dsb_simple(state.msg_attr.why, "4.3.0",
-<                              "cannot find alias database owner");
-<                   *statusp = defer_append(BOUNCE_FLAGS(state.request),
-<                                           BOUNCE_ATTR(state.msg_attr));
-<                   return (YES);
-<               }
-<               SET_USER_ATTR(usr_attr, alias_pwd, state.level);
-<           }
----
-> //        } else {
-> //            if (dict->owner.status == DICT_OWNER_UNKNOWN) {
-> //                msg_warn("%s: no owner UID for alias database %s",
-> //                         myname, *cpp);
-> //                dsb_simple(state.msg_attr.why, "4.3.0",
-> //                           "mail system configuration error");
-> //                *statusp = defer_append(BOUNCE_FLAGS(state.request),
-> //                                        BOUNCE_ATTR(state.msg_attr));
-> //                return (YES);
-> //            }
-> //            if ((errno = mypwuid_err(dict->owner.uid, &alias_pwd)) != 0
-> //                || alias_pwd == 0) {
-> //                msg_warn(errno ?
-> //                         "cannot find alias database owner for %s: %m" :
-> //                       "cannot find alias database owner for %s", *cpp);
-> //                dsb_simple(state.msg_attr.why, "4.3.0",
-> //                           "cannot find alias database owner");
-> //                *statusp = defer_append(BOUNCE_FLAGS(state.request),
-> //                                        BOUNCE_ATTR(state.msg_attr));
-> //                return (YES);
-> //            }
-> //            SET_USER_ATTR(usr_attr, alias_pwd, state.level);
-> //        }
+312a313,314
+>     // Mark it "trusted".
+>     dict_tcp->dict.owner.status = DICT_OWNER_TRUSTED;
 ```
 
 **3) Compile**
