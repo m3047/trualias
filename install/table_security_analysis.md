@@ -35,7 +35,7 @@ Continuing with the example of mapper implementations:
 An untrusted mapper such as `dict_tcp.c` can be made trusted by:
 
 * Not committing suicide when asked; and
-* setting ``dict_x->dict.owner.status = DICT_OWNER_TRUSTED`.
+* setting `dict_x->dict.owner.status = DICT_OWNER_TRUSTED`.
 
 The change is simple and straightforward enough that it can be reproduced here (the following code is part
 of _Postfix_, and subject to the _Secure Mailer License_), from `src/util/dict_tcp.c`:
