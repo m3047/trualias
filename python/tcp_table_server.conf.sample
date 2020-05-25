@@ -20,3 +20,7 @@ WITH ANY(), ANY(), CHAR(1,*);
 ACCOUNT baz
 MATCHES %alpha%is%alpha%.%code%
 WITH CHARS(1), CHARS(2);
+
+ACCOUNT amelia
+MATCHES %account%wants%alpha%.%code%
+WITH CHARS(account), NONE(account), CHARS(1);
