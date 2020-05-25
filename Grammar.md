@@ -137,6 +137,10 @@ is element 1. Coding types (like me) oftentimes expect to see _zero-based_ index
 `CHAR()` also allows negative indexing just for the character offset, which is also one-based (which will confuse coding
 types even more because that's the way they expect it to work).
 
+**Account and alias indexing:**
+
+Indexing of identifiers also supports the two special values `account` and `alias` in addition to an integer value. These reference the account and alias respectively. _These operate even if the account and/or alias are not present in the match expression._
+
 **Multiple identifiers:** It is possible to perform more than one identifier match in a match expression. For instance
 the following two expressions are (almost) identical:
 
