@@ -1,6 +1,6 @@
 # Alias Specification Grammar
 
-_Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
+_Copyright (c) 2019-2020 Fred Morris, Tacoma WA. Apache 2.0 license._
 
 The configuration file contains configuration parameters and alias specifications.
 
@@ -140,6 +140,21 @@ types even more because that's the way they expect it to work).
 **Account and alias indexing:**
 
 Indexing of identifiers also supports the two special values `account` and `alias` in addition to an integer value. These reference the account and alias respectively. _These operate even if the account and/or alias are not present in the match expression._
+
+Accounts and aliases do not count in the number of identifiers. For example the following has one identifier for matching purposes (as well as the account):
+
+```
+ACCOUNT amelia
+MATCHES %account%wants%alpha%.%code%
+WITH CHARS(account), NONE(account), CHARS(1);
+```
+
+An example match:
+
+```
+# /usr/sbin/postmap -q "ameliawantschips.6k5" tcp:athena.m3047.net:3047
+amelia
+```
 
 **Multiple identifiers:** It is possible to perform more than one identifier match in a match expression. For instance
 the following two expressions are (almost) identical:
