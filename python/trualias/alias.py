@@ -459,7 +459,7 @@ class MatchExpression(object):
                             continue
                         if PRINT_CALC_CODE:
                             PRINT_CALC_CODE('               calculating {}, {}'.format(code, idents))
-                        if calc.calculate(code,idents):
+                        if calc.calculate(code, idents, account, alias):
                             if PRINT_CALC_CODE:
                                 PRINT_CALC_CODE('               verified!'.format(code, idents))
                             verified.append(idents)
@@ -470,59 +470,79 @@ class MatchExpression(object):
                     continue
         return matches
 
+class Subscriptable(object):
+    """Encapsulates the notion that the subscript argument can be a subscript or account/alias."""
+    NONINTEGER_PARAM_VALUES = set('account alias'.split())
+
+    def __init__(self, identifiers, account, alias):
+        self.identifiers = identifiers
+        self.account = account
+        self.alias = alias
+        return
+    
+    @property
+    def n_identifiers(self):
+        return len(self.identifiers)
+    
+    def get(self, subscript):
+        subscript = subscript.lower()
+        if   subscript == 'account':
+            return Identifier('account', self.account)
+        elif subscript == 'alias':
+            return Identifier('alias', self.alias)
+        return self.identifiers[int(subscript)-1]
+    
 DIGITS = set("1234567890")
 def func_digits(code,args,identifiers):
-    i = args and args[0] or 1
-    return str(sum(( c in DIGITS for c in identifiers[i-1].value )))
+    i = args and args[0] or '1'
+    return str(sum(( c in DIGITS for c in identifiers.get(i).value )))
 
 ALPHAS = set('abcdefghijklmnopqrstuvwxyz')
 def func_alphas(code,args,identifiers):
-    i = args and args[0] or 1
-    return str(sum(( c in ALPHAS for c in identifiers[i-1].value )))
+    i = args and args[0] or '1'
+    return str(sum(( c in ALPHAS for c in identifiers.get(i).value )))
 
 def func_labels(code,args,identifiers):
-    i = args and args[0] or 1
-    if identifiers[i-1].type != 'fqdn':
+    i = args and args[0] or '1'
+    if identifiers.get(i).type != 'fqdn':
         return None
-    return str(len(identifiers[i-1].value.split('.')))
+    return str(len(identifiers.get(i).value.split('.')))
     
 def func_chars(code,args,identifiers):
-    i = args and args[0] or 1
-    return str(len(identifiers[i-1].value))
+    i = args and args[0] or '1'
+    return str(len(identifiers.get(i).value))
 
 VOWELS = set('aeiou')
 def func_vowels(code,args,identifiers):
-    i = args and args[0] or 1
-    return str(sum(( c in VOWELS for c in identifiers[i-1].value )))
+    i = args and args[0] or '1'
+    return str(sum(( c in VOWELS for c in identifiers.get(i).value )))
 
 def func_any(code,args,identifiers):
-    i = args and args[0] or 1
-    return code[0] in identifiers[i-1].value and code[0] or None
+    i = args and args[0] or '1'
+    return code[0] in identifiers.get(i).value and code[0] or None
 
 def func_none(code,args,identifiers):
-    i = args and args[0] or 1
-    return code[0] not in identifiers[i-1].value and code[0] or None
+    i = args and args[0] or '1'
+    return code[0] not in identifiers.get(i).value and code[0] or None
 
 def func_char(code,args,identifiers):
     """ This is the only one which has more than one possible argument..."""
     args = TestableIterator(args)
     
-    i_is_arg0 = 0
-    i_is_arg0 += len(args) > 2 and len(args) - 2 or 0
-    i_is_arg0 += len(identifiers) > 1
-    i_is_arg0 += len(identifiers) == 1 and identifiers[0].type != 'fqdn'
-    if i_is_arg0 > 1:
+    if len(args) == 4 or (  len(args) == 3
+                        and (identifiers.n_identifiers != 1 or identifiers.get('1').type != 'fqdn')
+                         ):
         i = args.next()
     else:
-        i = 1
+        i = '1'
 
-    label = identifiers[i-1].type == 'fqdn' and args.next() or 0
+    label = identifiers.get(i).type == 'fqdn' and args.next() or 0
     
     char = args.next()
     default = args.next()
     
-    identifier = identifiers[i-1].value
-    if identifiers[i-1].type == 'fqdn':
+    identifier = identifiers.get(i).value
+    if identifiers.get(i).type == 'fqdn':
         labels = identifier.split('.')
         if abs(label) > len(labels):
             return default
@@ -570,7 +590,7 @@ class CalcExpression(object):
         additional.update(kwargs)
         raise SemanticError(reason, additional)
 
-    def semantic_check(self, matchex):
+    def semantic_check(self, matchex, aliases):
         """Checks that the calc is valid with the match expression.
         
         Chiefly this consists of checking reference bounds and number of arguments.
@@ -582,42 +602,85 @@ class CalcExpression(object):
             func = calc[0]
             args = calc[1:]
             needs_ident_subscript = n_identifiers > 1
+            first_arg_is_label = False
             if func == 'CHAR':
                 if len(args) > 4:
                     self.semantic_error('{} requires at most 4 arguments with {}'.format(func, matchex.expression))
                 if needs_ident_subscript:
                     if len(args) < 3:
                         self.semantic_error('{} requires an identifier subscript with {}'.format(func, matchex.expression))
-                    i_ident = int(args[0])
-                    if i_ident < 1 or i_ident > n_identifiers:
-                        self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))
                     if len(args) == 4:
+                        try:
+                            i_ident = int(args[0])
+                        except ValueError:
+                            i_ident = -1
                         if i_ident not in matchex.fqdns:
                             self.semantic_error('{} index {} does not reference an fqdn in {}'.format(func, i_ident, matchex.expression))
                     else:
-                        if i_ident in matchex.fqdns:
-                            self.semantic_error('{} index {} references an fqdn and needs a label index with {}'.format(func, i_ident, matchex.expression))
+                        if args[0].lower() not in Subscriptable.NONINTEGER_PARAM_VALUES:
+                            try:
+                                i_ident = int(args[0])
+                            except ValueError:
+                                i_ident = -1
+                            if i_ident < 1 or i_ident > n_identifiers:
+                                self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))
+                            if i_ident in matchex.fqdns:
+                                self.semantic_error('{} index {} references an fqdn and needs a label index with {}'.format(func, i_ident, matchex.expression))
+                        elif args[0].lower() == 'alias' and not aliases:
+                            self.semantic_error('"alias" referenced in {} but no aliases present.'.format(matchex.expression))
                 else:
                     if len(args) < 2:
                         self.semantic_error('{} requires at least 2 arguments with {}'.format(func, matchex.expression))
-                    if len(args) == ((1 in matchex.fqdns) and 4 or 3) and int(args[0]) != 1:
-                        self.semantic_error('{} must have index of 1 with {}'.format(func, matchex.expression))
-                for i in range(len(calc)-2):
-                    calc[i+1] = int(calc[i+1])
+                    if 1 in matchex.fqdns:
+                        try:
+                            int(args[len(args)-3])
+                        except ValueError:
+                            self.semantic_error('{} requires numeric label index with {}'.format(func, matchex.expression))
+                        if len(args) == 4:
+                            try:
+                                i_ident = int(args[0])
+                            except ValueError:
+                                i_ident = -1
+                            if i_ident != 1:
+                                self.semantic_error('{} requires index of 1 with {}'.format(func, matchex.expression))
+                        else:
+                            first_arg_is_label = True
+                    else:
+                        if len(args) == 4:
+                            self.semantic_error('{} must not have a label argument with {}'.format(func, matchex.expression))
+                        if len(args) == 3:
+                            if args[0].lower() not in Subscriptable.NONINTEGER_PARAM_VALUES:
+                                try:
+                                    i_ident = int(args[0])
+                                except ValueError:
+                                    i_ident = -1
+                                if i_ident < 1 or i_ident > n_identifiers:
+                                    self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))                            
+                            elif args[0].lower() == 'alias' and not aliases:
+                                self.semantic_error('"alias" referenced in {} but no aliases present.'.format(matchex.expression))
+                # Preconvert label index and character offset to int, but not identifier index.
+                try:
+                    calc[-2] = int(calc[-2])
+                    if len(args) == 4 or first_arg_is_label:
+                        calc[-3] = int(calc[-3])
+                except ValueError:
+                    self.semantic_error('{} has invalid label or character index in {}'.format(func, matchex.expression))
             else:
                 if len(args) > 1:
                     self.semantic_error('{} requires at most 1 argument with {}'.format(func, matchex.expression))
                 if needs_ident_subscript:
                     if len(args) < 1:
                         self.semantic_error('{} requires an identifier subscript with {}'.format(func, matchex.expression))
-                    i_ident = int(args[0])
-                    if i_ident < 1 or i_ident > n_identifiers:
-                        self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))
-                else:
-                    if len(args) and int(args[0]) != 1:
-                        self.semantic_error('{} must have index of 1 with {}'.format(func, matchex.expression))
-                if len(calc) > 1:
-                    calc[1] = int(calc[1])
+                if len(args):
+                    if args[0].lower() not in Subscriptable.NONINTEGER_PARAM_VALUES:
+                        try:
+                            i_ident = int(args[0])
+                        except ValueError:
+                            i_ident = -1
+                        if i_ident < 1 or i_ident > n_identifiers:
+                            self.semantic_error('{} index must be between 1 and {} with {}'.format(func, n_identifiers, matchex.expression))                            
+                    elif args[0].lower() == 'alias' and not aliases:
+                        self.semantic_error('"alias" referenced in {} but no aliases present.'.format(matchex.expression))
         return
     
     FUNCS = dict(
@@ -631,7 +694,7 @@ class CalcExpression(object):
                 CHAR=func_char
         )
 
-    def calculate(self, code, identifiers):
+    def calculate(self, code, identifiers, account, alias):
         """Calculate the verification code from the list of Identifiers.
         
         Parameters
@@ -639,6 +702,8 @@ class CalcExpression(object):
         
             code        A single Identifier.
             identifiers A list of Identifiers.
+            account     The account.
+            alias       The alias.
 
         True if the calculated code matches the passed code. In particular, ANY()
         requires prior knowledge of the code being computed.
@@ -647,6 +712,7 @@ class CalcExpression(object):
         """
         code = code.value
         results = []
+        identifiers = Subscriptable(identifiers, account, alias)
         # The way that this works is that we consume the (passed) code and achieve success
         # if we run out at the same time we run out of functions to call.
         for calc in self.calcs:
@@ -692,7 +758,7 @@ class Alias(object):
         The match expression itself is checked for consistency when it is
         saved.
         """
-        self.calc.semantic_check(self.matchex)
+        self.calc.semantic_check(self.matchex, self.aliases)
         self.matchex.build_sketch(self.calc)
         return
     

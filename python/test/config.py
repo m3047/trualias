@@ -184,7 +184,7 @@ class TestParsingAliases(unittest.TestCase):
         """Multiple accounts get parsed correctly."""
         aliases = parse("""
                         ACCOUNT foo, bar,baz, zeep
-                        MATCHES %account%-%code%
+                        MATCHES %account%-%ident%-%code%
                         WITH  CHAR(1,-);
                         """
                        )['aliases']
@@ -198,7 +198,7 @@ class TestParsingAliases(unittest.TestCase):
         aliases = parse("""
                         ACCOUNT foo
                         ALIASED banana, orange,yoyoma
-                        MATCHES %alias%-%code%
+                        MATCHES %alias%-%ident%-%code%
                         WITH  CHAR(1,-);
                         """
                        )['aliases']
@@ -218,6 +218,11 @@ class TestParsingAliases(unittest.TestCase):
         self.assertEqual(len(aliases[0].calc), 3,
                          msg='Expected 3 calcs.'
                         )
+        return
+    
+    def test_bad_index_in_calc(self):
+        """A non-integer, unrecognized index."""
+        self.assertRaises(parser.ParseError, parse, '   \nACCOUNT foo MATCHES %ident%-%code% WITH ANY(bar); \n \n\n')        
         return
     
 class TestMatchexSemantics(unittest.TestCase):
@@ -441,6 +446,50 @@ class TestCalcSemantics(unittest.TestCase):
                          )
         return
     
+    def test_account_good(self):
+        """Tests good account argument."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY(account);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 2,
+                         msg="Expected calc to have 1 arg."
+                        )
+        return
+    
+    def test_alias_good(self):
+        """Tests good alias argument."""
+        aliases = parse("""
+                        ACCOUNT foo
+                        ALIASED fizz
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY(alias);
+                        """
+                       )['aliases']
+        self.assertEqual(len(aliases[0].calc), 1,
+                         msg="Expected one calc."
+                        )
+        self.assertEqual(len(aliases[0].calc[0]), 2,
+                         msg="Expected calc to have 1 arg."
+                        )
+        return
+
+    def test_alias_bad(self):
+        """Tests bad (no) alias argument."""
+        self.assertRaises(config.SemanticError, parse,
+                        """
+                        ACCOUNT foo
+                        MATCHES %account%-%alpha%-%code%
+                        WITH ANY(alias);
+                        """
+                       )
+        return
+
 class TestUniqueness(unittest.TestCase):
     """Tests our uniqueness guarantees."""
     

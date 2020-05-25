@@ -18,7 +18,7 @@ from ipaddress import ip_address
 from io import StringIO
 
 from .config_base import ConfigurationError, Loader, DEFAULT_CONFIG
-from .alias import Alias
+from .alias import Alias, Subscriptable
 
 class ParseError(ConfigurationError):
     """A parsing error occurred."""
@@ -85,6 +85,7 @@ class StreamParsingLoader(Loader):
             'STATISTICS': ('statistics', to_statistics)
         }
     CALC_FUNC_NAMES = set('DIGITS ALPHAS LABELS CHARS VOWELS ANY NONE CHAR'.split())
+    NONINTEGER_PARAM_VALUES = Subscriptable.NONINTEGER_PARAM_VALUES
     
     def __init__(self, fh):
         """Create a loader for the supplied filehandle."""
@@ -246,7 +247,7 @@ class StreamParsingLoader(Loader):
             item = self.token()
         return accounts.split(',')
     
-    def parameters(self):
+    def parameters(self, func):
         params = ''
         while ')' not in params:
             params += self.token()
@@ -254,6 +255,26 @@ class StreamParsingLoader(Loader):
         params, more = self.trailing(')',params)
         self.token_ = more
         params = params.strip().split(',')
+        try:
+            if func.upper() == 'CHAR':
+                if len(params) < 2:
+                    self.parse_error('CHAR() requires a minimum of two arguments.')
+                if len(params) == 3:
+                    if params[0].lower() not in self.NONINTEGER_PARAM_VALUES:
+                        param = params[0]
+                        param and int(param)
+                else:
+                    for param in params[:-1]:
+                        param and int(param)
+            else:
+                if len(params) > 1:
+                    self.parse_error('{}() requires no more than one argument.'.format(func.upper()))
+                if len(params):
+                    param = params[0]
+                    if param.lower() not in self.NONINTEGER_PARAM_VALUES:
+                        param and int(param)
+        except ValueError:
+                self.parse_error('Invalid calc parameter "{}" must be integer or "account" or "alias"'.format(param))
         return (len(params) != 1 or params[0]) and params or []
 
     def calcs(self):
@@ -265,7 +286,7 @@ class StreamParsingLoader(Loader):
                 self.parse_error('Unrecognized calc function: {}'.format(func))
             self.token_matched()
             self.token_ = item
-            params = self.parameters()
+            params = self.parameters(func)
             calc_list.append([func]+params)
             item = self.token()
             if item.startswith(','):

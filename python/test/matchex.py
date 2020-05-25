@@ -430,6 +430,59 @@ class TestCalcFunctions(unittest.TestCase):
         matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*')
         self.assertEqual(len(matched),1)
         return
+    
+    def test_account_index(self):
+        """
+        ACCOUNT foo
+        ALIASED bar
+        MATCHES %account%.%alpha%.%code%
+        WITH ANY(account),ANY(account);
+        """
+        alias = parse(self.test_account_index.__doc__)[0]
+        matchex = alias.matchex
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo.zeep.of')
+        self.assertEqual(len(matched),1)
+        return
+        
+    def test_alias_index(self):
+        """
+        ACCOUNT foo
+        ALIASED bar
+        MATCHES %account%.%alpha%.%code%
+        WITH ANY(alias), ANY(alias);
+        """
+        alias = parse(self.test_alias_index.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo.zeep.rb')
+        self.assertEqual(len(matched),1)
+        return
+
+    def test_multi_account(self):
+        """
+        ACCOUNT foo, bar
+        MATCHES %account%.%fqdn%.%code%
+        WITH ANY(account), ANY(account);
+        """
+        alias = parse(self.test_multi_account.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo.zeep.com.of')
+        self.assertEqual(len(matched),1)
+        return
+
+    def test_wrong_account(self):
+        """
+        ACCOUNT foo, bar
+        MATCHES %account%.%fqdn%.%code%
+        WITH ANY(account), ANY(account);
+        """
+        alias = parse(self.test_wrong_account.__doc__)[0]
+        matchex = alias.matchex
+
+        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'foo.zeep.com.rf')
+        self.assertEqual(len(matched),0)
+        return
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
