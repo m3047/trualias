@@ -8,7 +8,7 @@ protect yourself while doing so.
 These days every vendor, grocery store, and app wants to register you with an email address so they can offer better service
 (and track you). Most people either use their primary address which eventually gets flooded or create a second email account
 which they use for "commercial" purposes. Trualias is a more sophisticated way to create aliases as an alternative to
-[wildcarding an entire domain](https://lewman.blog/2019/09/02/why-i-have-over-one-thousand-personal-email-addresses/) which also lets you conveniently track the trackers!
+[wildcarding an entire domain](https://blog.lewman.com/why-i-have-over-one-thousand-personal-email-addresses.html) which also lets you conveniently track the trackers!
 
 Creating aliases or accounts every time you need to register for something or give out your email is a lot of work and annoying.
 This is why Trualias lets you make up a "new" email address (alias) on the fly. Wildcarding a domain means you receive every single email sent to the domain and there's no easy way to determine whether or not you handed out a particular alias or not. We need a bit more error correction to make that determination. What's the error checking? An easy,
