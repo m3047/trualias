@@ -127,11 +127,14 @@ class StreamParsingLoader(Loader):
         The newline characters should be stripped and replaced with
         (a single) white space.
         """
-        self.line_number += 1
-        line = self.fh.readline()
-        if not line:
-            raise EOFError()
-        return line.rstrip() + ' '
+        while True:
+            self.line_number += 1
+            line = self.fh.readline()
+            if not line:
+                raise EOFError()
+            if line.lstrip().startswith('#'):
+                continue
+            return line.rstrip() + ' '
 
     ## Parser components below here. ##
     

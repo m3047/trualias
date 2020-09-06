@@ -61,6 +61,33 @@ class TestBasicParsing(unittest.TestCase):
         """Garbage text."""
         self.assertRaises(parser.ParseError,parse,'FOO!')
         return
+    
+    def test_commented_line(self):
+        """A commented line."""
+        configuration = parse('# HOST: 1.2.3.4\nPORT: 42\n')
+        
+        self.assertEqual(configuration['host'], HOST)
+        self.assertEqual(configuration['port'], 42)
+        
+        return
+
+    def test_indented_commented_line(self):
+        """Indented ommented line."""
+        configuration = parse('  # HOST: 1.2.3.4\nPORT: 42\n')
+        
+        self.assertEqual(configuration['host'], HOST)
+        self.assertEqual(configuration['port'], 42)
+        
+        return
+
+    def test_runtogether_commented_line(self):
+        """Commented line with no space before following text."""
+        configuration = parse('#HOST: 1.2.3.4\nPORT: 42\n')
+        
+        self.assertEqual(configuration['host'], HOST)
+        self.assertEqual(configuration['port'], 42)
+        
+        return
 
 class TestParsingConfig(unittest.TestCase):
     """Tests parsing configuration values."""
