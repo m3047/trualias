@@ -74,23 +74,124 @@ class ValidRequest(WrappedFunctionResult):
     def check_for_success(self):
         return not self.result and True or False
 
+class Request(object):
+    """Everything to do with processing a request.
+    
+    The idiom is generally Request(message, statistics, config).response
+    and then do whatever is sensible with response. Response can be nothing,
+    in which case there is nothing further to do. If response is something,
+    a timer is started and stop_timer() should be called with one of the types
+    configured with configure_statistics().
+    """
+
+    COMMANDS = dict(get=2, stats=1, jstats=1)
+    STATISTICS_TYPES = ('success','not_found','bad','stats')
+    
+    @classmethod
+    def configure_statistics(cls, statistics):
+        """This is called to register statistics collectors.
+        
+        Enumerate the statuses/types of requests you will collect by calling
+        request_timer.stop().
+        """
+        return statistics.Collector( cls.STATISTICS_TYPES, 
+                                     using=UndeterminedStatisticsCollector
+                                   )
+    
+    def __init__(self, message, statistics, request_stats, config):
+        self.config = config
+        self.statistics = statistics
+        self.response = ""
+        request = message.strip().split()
+        if not request:
+            return
+        if request_stats:
+            self.request_timer = request_stats.start_timer()
+        else:
+            self.request_timer = None
+        self.dispatch_request(request)
+        return
+    
+    def validate_request(self, request):
+        verb = request[0].lower()
+        if verb not in self.COMMANDS:
+            return 'unrecognized command'
+        if len(request) != self.COMMANDS[verb]:
+            return 'improperly formed request'
+        if verb == 'stats' and not self.config.statistics:
+            return 'statistics disabled'
+        return ''
+
+    def dispatch_request(self, request):
+        """Called by __init__() to dispatch the request."""
+        validated = ValidRequest()
+        if validated(self.validate_request(request)).success:
+            verb = request[0].lower()
+            if   verb == 'get':
+                self.get(request)
+            elif verb == 'stats':
+                self.stats()
+            elif verb == 'jstats':
+                self.jstats()
+        else:
+            self.bad_request(validated)
+        return
+    
+    def get(self, request):
+        """A get request."""
+        delivery_address = trualias.find(request[1], self.config)
+        if delivery_address:
+            self.response = '200 {}\n'.format(delivery_address)
+            self.stop_timer('success')
+        else:
+            self.response = '500 not found\n'
+            self.stop_timer('not_found')
+        return
+    
+    def stats(self):
+        """Statistics in text format."""
+        code = 210
+        response = []
+        for stat in sorted(self.statistics.stats(), key=lambda x:x['name']):
+            response.append('{} {}'.format(code, format_statistics(stat)))
+            code = 212
+        self.response = '\n'.join(response) + '\n'
+        self.stop_timer('stats')
+        return
+    
+    def jstats(self):
+        """Statistics in JSON format."""
+        self.response = '210 ' + json.dumps(self.statistics.stats()) + '\n'
+        self.stop_timer('stats')
+        return
+    
+    def bad_request(self, validator):
+        """A bad/unrecognized request."""
+        self.response = '400 {}\n'.format(validator.result)
+        self.stop_timer('bad')
+        return
+    
+    def stop_timer(self, category):
+        if self.request_timer:
+            self.request_timer.stop(category)
+        return
+
 class CoroutineContext(object):
     
-    COMMANDS = dict(get=2, stats=1, jstats=1)
-    
-    def __init__(self, config, config_file, statistics):
+    def __init__(self, config, config_file, statistics, request_class=Request):
         self.config = config
         self.config_file = config_file
         self.mtime = os.stat(config_file).st_mtime
         self.peers = set()
         self.statistics = statistics
+        self.Request = request_class
         if config.statistics:
             self.connection_stats = statistics.Collector('connections')
             self.read_stats = statistics.Collector('reads')
             self.write_stats = statistics.Collector('writes')
-            self.request_stats = statistics.Collector(('success','not_found','bad','stats'), 
-                                                      using=UndeterminedStatisticsCollector
-                                                     )
+            self.request_stats = self.Request.configure_statistics(statistics)
+        else:
+            self.request_stats = None
         return
 
     async def configuration_watchdog(self, seconds):
@@ -113,22 +214,11 @@ class CoroutineContext(object):
                     logging.error('Unable to reload configuration: {}. Continuing to run with old configuration.'.format(e))                
         return
     
-    def validate_request(self, request):
-        verb = request[0].lower()
-        if verb not in self.COMMANDS:
-            return 'unrecognized command'
-        if len(request) != self.COMMANDS[verb]:
-            return 'improperly formed request'
-        if verb == 'stats' and not self.config.statistics:
-            return 'statistics disabled'
-        return ''
-
     async def handle_requests(self, reader, writer):
         if self.config.statistics:
             connection_timer = self.connection_stats.start_timer()
-        validated = ValidRequest()
+        remote_addr = writer.get_extra_info('peername')
         while True:
-            remote_addr = writer.get_extra_info('peername')
             if self.config.statistics:
                 read_timer = self.read_stats.start_timer()
             data = await reader.readline()
@@ -146,40 +236,9 @@ class CoroutineContext(object):
                 self.peers.add(remote_addr)
                 logging.info("Received %r from %r" % (message, remote_addr))
             
-            request = message.strip().split()
-            if not request:
+            response = self.Request(message, self.statistics, self.request_stats, self.config).response
+            if not response:
                 continue
-            if self.config.statistics:
-                request_timer = self.request_stats.start_timer()
-            if validated(self.validate_request(request)).success:
-                verb = request[0].lower()
-                if   verb == 'get':
-                    delivery_address = trualias.find(request[1], self.config)
-                    if delivery_address:
-                        response = '200 {}\n'.format(delivery_address)
-                        if self.config.statistics:
-                            request_timer.stop('success')
-                    else:
-                        response = '500 not found\n'
-                        if self.config.statistics:
-                            request_timer.stop('not_found')
-                elif verb == 'stats':
-                    code = 210
-                    response = []
-                    for stat in sorted(self.statistics.stats(), key=lambda x:x['name']):
-                        response.append('{} {}'.format(code, format_statistics(stat)))
-                        code = 212
-                    response = '\n'.join(response) + '\n'
-                    if self.config.statistics:
-                        request_timer.stop('stats')
-                elif verb == 'jstats':
-                    response = '210 ' + json.dumps(self.statistics.stats()) + '\n'
-                    if self.config.statistics:
-                        request_timer.stop('stats')
-            else:
-                response = '400 {}\n'.format(validated.result)
-                if self.config.statistics:
-                    request_timer.stop('bad')
 
             if self.config.statistics:
                 write_timer = self.write_stats.start_timer()
@@ -226,7 +285,19 @@ async def statistics_report(statistics, frequency):
             STATISTICS_PRINTER(format_statistics(stat))
     return
 
-def main():
+def allocate_context(config, config_file, statistics):
+    """Create your own adventure!
+    
+    A typical reason to contemplate subclassing CoroutineContext would be to handle a
+    different type of request or handle requests differently. But you don't need to do
+    that, instead subclass Request and then specify your subclass when instantiating
+    CoroutineContext.
+    """
+    #return CoroutineContext(config, config_file, statistics, request_class=MyRequests)
+    return CoroutineContext(config, config_file, statistics)
+
+def main(allocate_context=allocate_context):
+    """Call main() with a different context allocator if you subclass CoroutineContext."""
     try:
         for file_name in config_files():
             try:
@@ -246,7 +317,7 @@ def main():
     logging.basicConfig(level=config.logging)
     
     statistics = StatisticsFactory()
-    context = CoroutineContext(config, config_file, statistics)
+    context = allocate_context(config, config_file, statistics)
     
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
