@@ -65,9 +65,9 @@ MAX_READ_SIZE = 1024
 
 STATISTICS_PRINTER = logging.info
 
-def config_files():
+def resolve_config_files(config_file_names=CONFIG_FILE):
     code_path = path.dirname(path.abspath(__file__))
-    return (code_path + '/' + f for f in CONFIG_FILE)
+    return (code_path + '/' + f for f in config_file_names)
 
 class ValidRequest(WrappedFunctionResult):
     """Valid if the validation function returns nothing."""
@@ -296,10 +296,12 @@ def allocate_context(config, config_file, statistics):
     #return CoroutineContext(config, config_file, statistics, request_class=MyRequests)
     return CoroutineContext(config, config_file, statistics)
 
-def main(allocate_context=allocate_context):
+def main(allocate_context=allocate_context, config_files=None):
     """Call main() with a different context allocator if you subclass CoroutineContext."""
+    if config_files is None:
+        config_files = resolve_config_files()
     try:
-        for file_name in config_files():
+        for file_name in config_files:
             try:
                 with open(file_name, "r") as f:
                     config = trualias.load_config(f, raise_on_error=True)
