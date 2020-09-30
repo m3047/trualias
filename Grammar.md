@@ -10,18 +10,25 @@ The configuration file contains configuration parameters and alias specification
 
 ## Configuration statements
 
-Configuration statements fit on a single line and are terminated by a newline. The following configuration items are available:
+Configuration statements fit on a single line and are terminated by a newline. The following configuration items are available for `tcp_table_server`. The `milter_server` has some special statements. See `milter_server.conf.sample` for specifics. (In general, refer to the `*.conf.sample` file for whatever server you are using as the authoritative reference.)
 
-* `CASE SENSITIVE` (boolean) Whether stuff should be converted to lowercase before computation or not.
 * `HOST` (IP address) The address in turn determines the network interface which will be bound.
 * `PORT` (TCP port) The port the service should listen on.
 * `LOGGING` (enum) One of `debug`, `info`, `warning`, `error`, `critical` in order of increasing severity.
 * `DEBUG ACCOUNT` (identifier) Name of a locally deliverable account to receive mail for addresses which cannot be disambiguated.
+* `STATISTICS` (seconds or `no` or `None`) How often to log statistics. If `no` or `None` then statistics are disabled. If seconds is `0` then statistics aren't logged but are still available with the `stats` and `jstats` commands. LIMITED DYNAMIC CONTROL: if you start the server with statistics enabled (not `no` or `None`) then you can turn off the `stats` and `jstats` commands by dynamically changing this to `no` or `None`. The `milter_server` doesn't have statistics.
+
+Configuration statements supported by other servers include:
+
+* `SMTP HOST` (IP address) Address of an SMTP server providing `VRFY`.
+* `SMTP PORT` (TCP port) The port the SMTP server providing `VRFY` listens on.
+* `LOCAL HOST` (FQDN) Hostname we use when identifying ourselves to the SMTP server.
+* `LOCAL DOMAINS` (FQDN list) List of domains we provide translations for.
 
 ```
 <config-statement> := <conf-item> : <conf-value> <newline>
 <conf-item> := CASE SENSITIVE | HOST | PORT | LOGGING | DEBUG ACCOUNT
-<conf-value> := <boolean> | <address> | <integer> | <log-level> | <identifier>
+<conf-value> := <boolean> | <address> | <integer> | <log-level> | <identifier> | <fqdn>
 ```
 
 ## Alias specifications
