@@ -105,7 +105,7 @@ class Request(object):
         request = message.strip().split()
         if not request:
             return
-        if request_stats:
+        if request_stats is not None:
             self.request_timer = request_stats.start_timer()
         else:
             self.request_timer = None
@@ -118,7 +118,7 @@ class Request(object):
             return 'unrecognized command'
         if len(request) != self.COMMANDS[verb]:
             return 'improperly formed request'
-        if verb == 'stats' and not self.config.statistics:
+        if verb == 'stats' and (self.config.statistics is None or self.statistics is None):
             return 'statistics disabled'
         return ''
 
@@ -161,7 +161,10 @@ class Request(object):
     
     def jstats(self):
         """Statistics in JSON format."""
-        self.response = '210 ' + json.dumps(self.statistics.stats()) + '\n'
+        if (self.config.statistics is None or self.statistics is None):
+            self.response = '400 []\n'
+        else:
+            self.response = '210 ' + json.dumps(self.statistics.stats()) + '\n'
         self.stop_timer('stats')
         return
     
@@ -172,7 +175,7 @@ class Request(object):
         return
     
     def stop_timer(self, category):
-        if self.request_timer:
+        if self.request_timer is not None:
             self.request_timer.stop(category)
         return
 
@@ -183,14 +186,18 @@ class CoroutineContext(object):
         self.config_file = config_file
         self.mtime = os.stat(config_file).st_mtime
         self.peers = set()
-        self.statistics = statistics
         self.Request = request_class
-        if config.statistics:
+        if config.statistics is not None:
+            self.statistics = statistics
             self.connection_stats = statistics.Collector('connections')
             self.read_stats = statistics.Collector('reads')
             self.write_stats = statistics.Collector('writes')
             self.request_stats = self.Request.configure_statistics(statistics)
         else:
+            self.statistics = None
+            self.connection_stats = None
+            self.read_stats = None
+            self.write_stats = None
             self.request_stats = None
         return
 
@@ -215,14 +222,18 @@ class CoroutineContext(object):
         return
     
     async def handle_requests(self, reader, writer):
-        if self.config.statistics:
+        if self.config.statistics is not None and self.connection_stats is not None:
             connection_timer = self.connection_stats.start_timer()
+        else:
+            connection_timer = None
         remote_addr = writer.get_extra_info('peername')
         while True:
-            if self.config.statistics:
+            if self.config.statistics is not None and self.read_stats is not None:
                 read_timer = self.read_stats.start_timer()
+            else:
+                read_timer = None
             data = await reader.readline()
-            if self.config.statistics:
+            if read_timer is not None:
                 read_timer.stop()
             try:
                 message = data.decode()
@@ -240,15 +251,17 @@ class CoroutineContext(object):
             if not response:
                 continue
 
-            if self.config.statistics:
+            if self.config.statistics is not None and self.write_stats is not None:
                 write_timer = self.write_stats.start_timer()
+            else:
+                write_timer = None
             writer.write(response.encode())
             await writer.drain()
-            if self.config.statistics:
+            if write_timer is not None:
                 write_timer.stop()
 
         writer.close()
-        if self.config.statistics:
+        if connection_timer is not None:
             connection_timer.stop()
         return
     
@@ -318,14 +331,17 @@ def main(allocate_context=allocate_context, config_files=None):
     
     logging.basicConfig(level=config.logging)
     
-    statistics = StatisticsFactory()
+    if config.statistics is not None:
+        statistics = StatisticsFactory()
+    else:
+        statistics = None
     context = allocate_context(config, config_file, statistics)
     
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
     server = loop.run_until_complete(coro)
     watchdog = asyncio.run_coroutine_threadsafe(context.configuration_watchdog(WATCHDOG_SECONDS), loop)
-    if config.statistics and config.statistics > 0:
+    if config.statistics is not None and config.statistics > 0:
         asyncio.run_coroutine_threadsafe(statistics_report(statistics, config.statistics), loop)
     # Serve requests until we're told to exit (Ctrl+C is pressed, a signal, something really bad, etc.)
     logging.info('Serving on {}'.format(server.sockets[0].getsockname()))
