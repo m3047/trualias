@@ -65,7 +65,10 @@ NO_STATISTICS = {'none','no'}
 def to_statistics(value):
     if value.lower() in NO_STATISTICS:
         return None
-    return int(value)
+    value = int(value)
+    if value < 0:
+        value = 0
+    return value
 
 class StreamParsingLoader(Loader):
     """Creates a configuration dictionary by parsing a text stream.
