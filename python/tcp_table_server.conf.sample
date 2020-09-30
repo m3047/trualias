@@ -5,7 +5,7 @@ DEBUG ACCOUNT: debug_account
 # PORT: 3047
 #
 # This controls statistics reporting.
-# 0 or None=no stats, -1=collect but don't report, >0=report interval in seconds
+# None=no stats, 0=collect but don't report, >0=report interval in seconds
 # STATISTICS: None
 
 ACCOUNT foo, bar
