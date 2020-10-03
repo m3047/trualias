@@ -181,7 +181,8 @@ class Request(object):
 
 class CoroutineContext(object):
     
-    def __init__(self, config, config_file, statistics, request_class=Request):
+    def __init__(self, config_loader, config, config_file, statistics, request_class=Request):
+        self.config_loader = config_loader
         self.config = config
         self.config_file = config_file
         self.mtime = os.stat(config_file).st_mtime
@@ -216,7 +217,7 @@ class CoroutineContext(object):
                 logging.info('Reloading configuration.')
                 try:
                     with open(self.config_file, "r") as f:
-                        self.config = trualias.load_config(f, raise_on_error=True)
+                        self.config = self.config_loader(f)
                 except Exception as e:
                     logging.error('Unable to reload configuration: {}. Continuing to run with old configuration.'.format(e))                
         return
@@ -298,7 +299,7 @@ async def statistics_report(statistics, frequency):
             STATISTICS_PRINTER(format_statistics(stat))
     return
 
-def allocate_context(config, config_file, statistics):
+def allocate_context(config_loader, config, config_file, statistics):
     """Create your own adventure!
     
     A typical reason to contemplate subclassing CoroutineContext would be to handle a
@@ -307,9 +308,19 @@ def allocate_context(config, config_file, statistics):
     CoroutineContext.
     """
     #return CoroutineContext(config, config_file, statistics, request_class=MyRequests)
-    return CoroutineContext(config, config_file, statistics)
+    return CoroutineContext(config_loader, config, config_file, statistics)
 
-def main(allocate_context=allocate_context, config_files=None):
+def config_loader(f):
+    """Create your own adventure!
+    
+    If you're trying to implement your own functionality, you'll likely need custom
+    configuration parameters. To do that you'd implement your own configuration
+    loader (see trualias.parser.StreamParsingLoader) and configuration (see
+    trualias.config.Configuration).
+    """
+    return trualias.load_config(f, raise_on_error=True)
+
+def main(allocate_context=allocate_context, config_files=None, config_loader=config_loader):
     """Call main() with a different context allocator if you subclass CoroutineContext."""
     if config_files is None:
         config_files = resolve_config_files()
@@ -317,7 +328,7 @@ def main(allocate_context=allocate_context, config_files=None):
         for file_name in config_files:
             try:
                 with open(file_name, "r") as f:
-                    config = trualias.load_config(f, raise_on_error=True)
+                    config = config_loader(f)
                 last_exception = None
                 config_file = file_name
                 break
@@ -335,7 +346,7 @@ def main(allocate_context=allocate_context, config_files=None):
         statistics = StatisticsFactory()
     else:
         statistics = None
-    context = allocate_context(config, config_file, statistics)
+    context = allocate_context(config_loader, config, config_file, statistics)
     
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
