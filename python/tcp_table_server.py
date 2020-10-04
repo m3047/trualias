@@ -335,7 +335,7 @@ def main(allocate_context=allocate_context, config_files=None, config_loader=con
             except FileNotFoundError as e:
                 last_exception = e
         if last_exception:
-            raise e
+            raise FileNotFoundError('No configuration file could be found.')
     except Exception as e:
         logging.fatal('Unable to load configuration: {}'.format(e))
         sys.exit(1)
