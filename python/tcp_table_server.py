@@ -77,7 +77,7 @@ class ValidRequest(WrappedFunctionResult):
 class Request(object):
     """Everything to do with processing a request.
     
-    The idiom is generally Request(message, statistics, config).response
+    The idiom is generally Request(message, statistics, request_stats, config).response
     and then do whatever is sensible with response. Response can be nothing,
     in which case there is nothing further to do. If response is something,
     a timer is started and stop_timer() should be called with one of the types
