@@ -1,0 +1,27 @@
+LOGGING: info
+DEBUG ACCOUNT: debug_account
+ALIAS DOMAINS: example.com
+# These are the address and port to listen on; the defaults are shown.
+# HOST: 127.0.0.1
+# PORT: 3047
+#
+# This controls statistics reporting.
+# None=no stats, 0=collect but don't report, >0=report interval in seconds
+# STATISTICS: None
+
+ACCOUNT foo, bar
+MATCHES %account%-%alnum%-%code%
+WITH DIGITS(), ANY(), VOWELS();
+
+ACCOUNT foo
+ALIASED griselda, pinky
+MATCHES %alias%-%ident%-%code%
+WITH ANY(), ANY(), CHAR(1,*);
+
+ACCOUNT baz
+MATCHES %alpha%is%alpha%.%code%
+WITH CHARS(1), CHARS(2);
+
+ACCOUNT amelia
+MATCHES %account%wants%alpha%.%code%
+WITH CHARS(account), NONE(account), CHARS(1);
