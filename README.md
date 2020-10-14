@@ -16,19 +16,18 @@ mentally-calculable checksum to add at the end of the alias.
 
 ### Postfix tcp tables
 
-This utility is implemented as a [TCP table service](http://www.postfix.org/tcp_table.5.html). Except for some rudimentary configuration settings (for network interface/address, port and logging level) and service startup there is nothing else to set up beside the specifics of your particular encoding scheme (in a file `trualias.conf` in the same directory as the script).
+This utility is implemented as a [TCP table service](http://www.postfix.org/tcp_table.5.html) for both local aliases (`tcp_table_server`) and [virtual aliases](http://www.postfix.org/virtual.5.html) (`tcp_virtual_server`). Except for some rudimentary configuration settings (for network interface/address, port and logging level) and service startup there is nothing else to set up beside the specifics of your particular encoding scheme (in a file `trualias.conf` in the same directory as the script).
 
-Inside of `main.cf` the only thing you need to do in a vanilla installation is add the service to `alias_maps` (assuming that the service is configured to listen on loopback port 3047):
+Inside of `main.cf` the only thing you need to do in a vanilla installation is add the service to `virtual_alias_maps` (assuming that the service is configured to listen on loopback port 3047):
 
 ```
-alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
+virtual_alias_maps = hash:/etc/postfix/virtual tcp:127.0.0.1:3047
 ```
 
-Look in the `install/` and `python/` directories for further information about installation and setup.
+The domains with aliases being mapped do not need to be listed in `virtual_alias_domains`. Look in the `install/` and `python/` directories for further information about installation and setup.
 
-Because current
-policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases, you will need to
-recompile and replace `local(8)`; instructions are provided.
+You will want to use `tcp_virtual_server` rather than `tcp_table_server` because current
+policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases for local accounts.
 
 ### Milter server
 
@@ -104,10 +103,3 @@ We make it easy to tailor the format of the alias and to compute a checkum which
 * `ANY()` Any character in an identifier.
 * `NONE()` Any character not in an identifier.
 * `CHAR()` The character at a certain position in an identifier.
-
-## I don't want to patch `postfix` is there anything I can do?
-
-If you _are_ wildcarding a domain or stemming an account and you're using a filtering program such as procmail,
-you can still filter on the `Delivery-Account:`. See `/install/procmailrc` as one example.
-
-You can also run it as a milter, but I don't recommend that option unless you're already running milters.
