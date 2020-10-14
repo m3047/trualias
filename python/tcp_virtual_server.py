@@ -80,7 +80,6 @@ class VirtualRequest(base_server.Request):
         domain (account@example.com).
         """
         parts = request[1].split('@')
-        print(parts)
         if len(parts) == 2 and parts[1].lower() in self.config.alias_domains:
             delivery_address = trualias.find(parts[0], self.config)
         else:
