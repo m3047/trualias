@@ -44,3 +44,5 @@ virtual_alias_maps = hash:/etc/aliases tcp:127.0.0.1:3047
 
 The supplied procmailrc file demonstrates how to extract the address which the mail message was delivered for,
 query the table service with postmap, and use that to create an `X-Alias:` header which is added to the mail message.
+
+The example is intended to work with `tcp_table_server.py`, which expects just the alias (or "left-hand side"). To make it work when `tcp_virtual_server.py` is running, you should pass the entire address to `postmap`, and extract it from the `X-Original-To:` header rather than `Delivered-To:`.
