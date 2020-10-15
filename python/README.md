@@ -67,6 +67,18 @@ jstats
 212 [{"name": "connections", "elapsed": {"minimum": 0.0, "maximum": 0.06274080276489258, "one": 0.0, "ten": 0.0, "sixty": 0.0010456800460815429}, "depth": {"minimum": 0, "maximum": 1, "one": 1, "ten": 1.0, "sixty": 0.8333333333333334}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.03333333333333333}}, {"name": "reads", "elapsed": {"minimum": 0.0, "maximum": 5.409029722213745, "one": 0.0, "ten": 0.0, "sixty": 0.21678426861763}, "depth": {"minimum": 0, "maximum": 1, "one": 1, "ten": 1.0, "sixty": 0.8333333333333334}, "n_per_sec": {"minimum": 0, "maximum": 2, "one": 0, "ten": 0.0, "sixty": 0.11666666666666667}}, {"name": "writes", "elapsed": {"minimum": 0.0, "maximum": 9.918212890625e-05, "one": 0.0, "ten": 0.0, "sixty": 7.673104604085286e-06}, "depth": {"minimum": 0, "maximum": 0, "one": 0, "ten": 0.0, "sixty": 0.0}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.08333333333333333}}, {"name": "success", "elapsed": {"minimum": 0.0, "maximum": 0.0007426738739013672, "one": 0.0, "ten": 0.0, "sixty": 2.3651123046875e-05}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.03333333333333333}}, {"name": "not_found", "elapsed": {"minimum": 0.0, "maximum": 0.00010251998901367188, "one": 0.0, "ten": 0.0, "sixty": 1.708666483561198e-06}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}, {"name": "bad", "elapsed": {"minimum": 0.0, "maximum": 3.910064697265625e-05, "one": 0.0, "ten": 0.0, "sixty": 6.516774495442708e-07}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}, {"name": "stats", "elapsed": {"minimum": 0.0, "maximum": 0.0016276836395263672, "one": 0.0, "ten": 0.0, "sixty": 2.7128060658772786e-05}, "n_per_sec": {"minimum": 0, "maximum": 1, "one": 0, "ten": 0.0, "sixty": 0.016666666666666666}}]
 ```
 
+### Differences between `alias_map` and `virtual_alias_map` in Postfix
+
+There are a couple of differences between these.
+
+|   | `Delivered-To:` header | query string |
+| - | -------------------- | ------------ |
+| **alias_map** | alias address | account ("left-hand side") |
+| **virtual_alias_map** | delivery address | full email address |
+
+As a consequence, `tcp_table_server` expects just the account and returns an account, whereas `tcp_virtual_server` expects the
+whole aliased email address and returns a whole email address. The `X-Original-To:` address always contains the alias address.
+
 ## Milters on the other hand...
 
 If you're not already running milters this is probably not a good option for you. If you don't have your head
