@@ -14,6 +14,8 @@
 
 # This sample procmailrc illustrates calling postmap to look up the delivery
 # address and use that to add an "X-Aliased:" header to the message.
+#
+# It assumes that the server which is running is tcp_table_server.py
 
 LOGFILE=procmail.log
 VERBOSE=yes
