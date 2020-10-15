@@ -11,7 +11,7 @@ baz
 
 It watches the configuration file and will reload it if it changes.
 
-To actually call it from `main.cf` you will have to recompile `local(8)`. See the instructions in `../install/`.
+To actually call it from `main.cf` you will have to recompile `local(8)`, or consider using `tcp_virtual_server` with `virtual_alias_maps` (probably a better option). See the instructions in `../install/`.
 
 ### Hacking 101
 
