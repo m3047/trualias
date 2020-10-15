@@ -15,13 +15,18 @@
 # This sample procmailrc illustrates calling postmap to look up the delivery
 # address and use that to add an "X-Aliased:" header to the message.
 #
-# It assumes that the server which is running is tcp_table_server.py
+# It assumes that the server which is running is tcp_virtual_server.py
 
 LOGFILE=procmail.log
 VERBOSE=yes
 
+# If you're using tcp_table_server.py, use this.
+#:0 h
+#DELIVERY_ADDRESS=| formail -X"Delivered-To:" | perl -ne 'm/^Delivered-To:\s+([^@]*)/i && print $1;'
+# If you're using tcp_virtual_server.py, use this.
 :0 h
-DELIVERY_ADDRESS=| formail -X"Delivered-To:" | perl -ne 'm/^Delivered-To:\s+([^@]*)/i && print $1;'
+DELIVERY_ADDRESS=| formail -X"X-Original-To:" | perl -ne 'm/^X-Original-To:\s+(\S+)/i && print $1;'
+
 ALIAS=`/usr/sbin/postmap -q "$DELIVERY_ADDRESS" tcp:127.0.0.1:3047`
 
 :0 h H f w
