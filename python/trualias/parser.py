@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,9 +77,10 @@ class StreamParsingLoader(Loader):
     to override read_line().
     """
 
-    CONFIG_FIRST_WORDS = set('CASE HOST PORT LOGGING DEBUG STATISTICS'.split())
+    CONFIG_FIRST_WORDS = set('CASE HOST PORT LOGGING DEBUG STATISTICS PYTHON_IS_311'.split())
     CONFIG_SECOND_WORDS = dict(CASE=['SENSITIVE'],DEBUG=['ACCOUNT'])
     CONFIG_MAP = {
+            'PYTHON_IS_311': ('python_is_311', to_boolean),
             'CASE SENSITIVE': ('case_sensitive', to_boolean),
             'HOST': ('host', to_address),
             'PORT': ('port', to_port),
@@ -176,9 +177,11 @@ class StreamParsingLoader(Loader):
                 self.parse_error('Unrecognized keyword "{}"'.format(keyword))
             self.token_matched()
             item += ' ' + keyword
+        if item not in self.CONFIG_MAP:
+            self.parse_error('Unrecognized item "{}"'.format(item))
         config_item = self.CONFIG_MAP[item]
         if not colon_seen:
-            more  = self.token()
+            more = self.token()
             self.token_matched()
             if not more.startswith(':'):
                 self.parse_error('Invalid syntax for {}'.format(item))

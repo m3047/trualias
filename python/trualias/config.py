@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -73,6 +73,10 @@ class Configuration(object):
     @property
     def statistics(self):
         return self.config['statistics']
+    
+    @property
+    def python_is_311(self):
+        return self.config['python_is_311']
     
     def build_maps(self):
         """Builds the internal maps used by lookup methods.

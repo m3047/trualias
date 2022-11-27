@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,11 @@
 
 """Miscellaneous configuration prerequisites."""
 
+import sysconfig
 import logging
 from ipaddress import ip_address
+
+PYTHON_IS_311 = int( sysconfig.get_python_version().split('.')[1] ) >= 11
 
 CASE_SENSITIVE = False
 HOST = ip_address('127.0.0.1')
@@ -53,6 +56,7 @@ def DEFAULT_CONFIG(minimal=False):
         config = dict()
     else:
         config = dict(
+                    python_is_311=PYTHON_IS_311,
                     case_sensitive=CASE_SENSITIVE,
                     host=HOST,
                     port=PORT,

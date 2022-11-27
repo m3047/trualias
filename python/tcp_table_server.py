@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019-2020 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ from os import path
 from time import time
 
 import asyncio
-from concurrent.futures import CancelledError
+from asyncio import CancelledError
 import logging
 import json
 
@@ -320,6 +320,60 @@ def config_loader(f):
     """
     return trualias.load_config(f, raise_on_error=True)
 
+def run_36(context, config, statistics):
+    """Uses run_forever()."""
+    loop = asyncio.get_event_loop()
+    coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
+    server = loop.run_until_complete(coro)
+    watchdog = asyncio.run_coroutine_threadsafe(context.configuration_watchdog(WATCHDOG_SECONDS), loop)
+    if config.statistics is not None and config.statistics > 0:
+        asyncio.run_coroutine_threadsafe(statistics_report(statistics, config.statistics), loop)
+        
+    # Serve requests until we're told to exit (Ctrl+C is pressed, a signal, something really bad, etc.)
+    logging.info('Serving on {}'.format(server.sockets[0].getsockname()))
+    readers = None
+    try:
+        loop.run_forever()
+    except (KeyboardInterrupt, Exception) as e:
+        logging.info('Exiting: {}'.format(str(e) or type(e)))
+        readers = asyncio.Task.all_tasks(loop)
+    
+    # Cancel the periodic task.
+    loop.run_until_complete(close_watchdog(watchdog))
+    
+    # Kill reader tasks.
+    if readers:
+        loop.run_until_complete(close_readers(readers))
+    
+    # Close the server.
+    server.close()
+    loop.run_until_complete(server.wait_closed())
+    loop.close()
+
+    return
+
+async def run_311(context, config, statistics):
+    """Runs as a coroutine itself."""
+    loop = asyncio.get_running_loop()
+    server = await asyncio.start_server(
+            context.handle_requests, str(config.host), config.port, limit=MAX_READ_SIZE
+        )
+    watchdog = loop.create_task(context.configuration_watchdog(WATCHDOG_SECONDS))
+    if config.statistics is not None and config.statistics > 0:
+        statistics_reporting = loop.create_task( statistics_report(statistics, config.statistics ))
+    else:
+        statistics_reporting = None
+    
+    logging.info('Serving on {}'.format(server.sockets[0].getsockname()))
+    
+    async with server:
+        try:
+            await server.serve_forever()
+        except (CancelledError, Exception) as e:
+            logging.info('Exiting: {}'.format(str(e) or type(e)))
+            
+    return
+
 def main(allocate_context=allocate_context, config_files=None, config_loader=config_loader):
     """Call main() with a different context allocator if you subclass CoroutineContext."""
     if config_files is None:
@@ -348,32 +402,13 @@ def main(allocate_context=allocate_context, config_files=None, config_loader=con
         statistics = None
     context = allocate_context(config_loader, config, config_file, statistics)
     
-    loop = asyncio.get_event_loop()
-    coro = asyncio.start_server(context.handle_requests, str(config.host), config.port, loop=loop, limit=MAX_READ_SIZE)
-    server = loop.run_until_complete(coro)
-    watchdog = asyncio.run_coroutine_threadsafe(context.configuration_watchdog(WATCHDOG_SECONDS), loop)
-    if config.statistics is not None and config.statistics > 0:
-        asyncio.run_coroutine_threadsafe(statistics_report(statistics, config.statistics), loop)
-    # Serve requests until we're told to exit (Ctrl+C is pressed, a signal, something really bad, etc.)
-    logging.info('Serving on {}'.format(server.sockets[0].getsockname()))
-    readers = None
-    try:
-        loop.run_forever()
-    except (KeyboardInterrupt, Exception) as e:
-        logging.info('Exiting: {}'.format(str(e) or type(e)))
-        readers = asyncio.Task.all_tasks(loop)
-    
-    # Cancel the periodic task.
-    loop.run_until_complete(close_watchdog(watchdog))
-    
-    # Kill reader tasks.
-    if readers:
-        loop.run_until_complete(close_readers(readers))
-    
-    # Close the server.
-    server.close()
-    loop.run_until_complete(server.wait_closed())
-    loop.close()
+    standard_run_args = (context, config, statistics)
+    if config.python_is_311:
+        # Requires everything to run within the loop context.
+        asyncio.run(run_311(*standard_run_args))
+    else:
+        # Coroutines in the nonrunning loop queue is a feature, not a bug.
+        run_36(*standard_run_args)
     
     return
 
