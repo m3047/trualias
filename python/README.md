@@ -79,7 +79,10 @@ There are a couple of differences between these.
 As a consequence, `tcp_table_server` expects just the account and returns an account, whereas `tcp_virtual_server` expects the
 whole aliased email address and returns a whole email address. The `X-Original-To:` address always contains the alias address.
 
-## Milters on the other hand...
+## Milters on the other hand... DEPRECATED
+
+November 2022: I updated `tcp_table_server.py` and `tcp_virtual_server.py` for compatibility with _Python 3.11_. I have
+not updated the milter, and have no plans to do so since there has been no interest that I am aware of in the last year.
 
 If you're not already running milters this is probably not a good option for you. If you don't have your head
 wrapped around local delivery accounts and not being an open relay or source of incorrectly addressed blowback,
