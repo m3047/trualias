@@ -1,6 +1,6 @@
 # trualias
 
-_Copyright (c) 2019 Fred Morris, Tacoma WA. Apache 2.0 license._
+_Copyright (c) 2019-2022 Fred Morris, Tacoma WA. Apache 2.0 license._
 
 Trualias is a postfix tcp table that lets you hand out your email address to anyone and everyone but add a bit of math to
 protect yourself while doing so.
