@@ -29,7 +29,10 @@ The domains with aliases being mapped do not need to be listed in `virtual_alias
 You will want to use `tcp_virtual_server` rather than `tcp_table_server` because current
 policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases for local accounts.
 
-### Milter server
+### Milter server (DEPRECATED)
+
+NOTE: In November 2022 `tcp_table_server.py` (and by implication `tcp_virtual_server.py`) were updated to be compatible
+with _Python 3.11_. The milter server has not been updated and there are no current plans to do so.
 
 There is also a _milter_ implementation. It doesn't get as much love, because quite frankly I have no concerns
 or difficulties recompiling and replacing `local(8)` and the TCP table solution works perfectly with _Postfix_ `local_recipient_maps` and rejects recipients during the SMTP `RCPT` exchange.
