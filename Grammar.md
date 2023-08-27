@@ -85,8 +85,8 @@ matches a locally deliverable email destination.
 * `alnum`: matches letters and numerals
 * `alpha`: matches letters only
 * `number`: matches numerals only
-* `fqdn`: matches a domain name, or in other words runs of letters, numerals and dashes separated by dots.
-* `ident`: matches the common identifier pattern, which is to say letters, numerals, "-" and "_".
+* `fqdn`: matches a domain name, or in other words runs of letters, numerals and dashes ("-") separated by dots.
+* `ident`: matches the common identifier pattern, which is to say letters, numerals, and "_".
 
 Only `alpha` and `number` may occur immediately adjacent to each other, and neither of them may be immediately
 adjacent to themselves.
