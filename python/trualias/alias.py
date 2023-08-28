@@ -242,8 +242,8 @@ class MatchExpression(object):
     IDENT_MATCHERS = dict(   alnum=Matcher('alnum',MATCH_ALNUM),
                              alpha=Matcher('alpha',MATCH_ALPHA),
                              number=Matcher('number',MATCH_NUMBER),
-                             ident=Matcher('ident',MATCH_IDENT,MATCH_IDENT|set('-'),MATCH_IDENT),
-                             fqdn=Matcher('fqdn',MATCH_IDENT,MATCH_FQDN,MATCH_IDENT)
+                             ident=Matcher('ident',MATCH_ALNUM,MATCH_IDENT,MATCH_ALNUM),
+                             fqdn=MatchFQDN('fqdn',MATCH_ALNUM,MATCH_FQDN,MATCH_ALNUM)
                            )
     ALL_MATCHERS = dict( IDENT_MATCHERS,
                              account=Matcher('account',MATCH_IDENT),
