@@ -77,7 +77,7 @@ class TestAliasNameLookup(unittest.TestCase):
         return
 
     def test_alias_griselda(self):
-        self.assertEqual(self.looker.find('griselda-23-skidoo-3k2'),'foo')
+        self.assertEqual(self.looker.find('griselda-23_skidoo-3k2'),'foo')
         return
     
     def test_8ball(self):
