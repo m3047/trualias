@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019,2013 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -242,8 +242,8 @@ class MatchExpression(object):
     IDENT_MATCHERS = dict(   alnum=Matcher('alnum',MATCH_ALNUM),
                              alpha=Matcher('alpha',MATCH_ALPHA),
                              number=Matcher('number',MATCH_NUMBER),
-                             ident=Matcher('ident',MATCH_IDENT,MATCH_IDENT|set('-'),MATCH_IDENT),
-                             fqdn=Matcher('fqdn',MATCH_IDENT,MATCH_FQDN,MATCH_IDENT)
+                             ident=Matcher('ident',MATCH_ALNUM,MATCH_IDENT,MATCH_ALNUM),
+                             fqdn=MatchFQDN('fqdn',MATCH_ALNUM,MATCH_FQDN,MATCH_ALNUM)
                            )
     ALL_MATCHERS = dict( IDENT_MATCHERS,
                              account=Matcher('account',MATCH_IDENT),
@@ -461,7 +461,7 @@ class MatchExpression(object):
                             PRINT_CALC_CODE('               calculating {}, {}'.format(code, idents))
                         if calc.calculate(code, idents, account, alias):
                             if PRINT_CALC_CODE:
-                                PRINT_CALC_CODE('               verified!'.format(code, idents))
+                                PRINT_CALC_CODE('               verified! {}, {}'.format(code, idents))
                             verified.append(idents)
                     
                     if verified:
@@ -728,6 +728,11 @@ class CalcExpression(object):
             else:
                 return False
             results.append(fv)
+        
+        # Shouldn't be anything left over.
+        if code:
+            return False
+        
         return ''.join(results)
 
 class Alias(object):

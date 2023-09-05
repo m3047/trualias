@@ -88,7 +88,9 @@ class TestMatchingPrimitives(unittest.TestCase):
         result = matcher("aaa.bbb.c-c", start_pos=7, end_pos=None, minimal=False)
         self.assertEqual(result, None)
         result = matcher("aaa.bbb.c-c", start_pos=8, end_pos=9, minimal=False)
-        self.assertEqual(result, (8,9))
+        self.assertEqual(result, None)
+        result = matcher("aaa.bbb.c-c", start_pos=8, end_pos=10, minimal=False)
+        self.assertEqual(result, (8,10))
         result = matcher("aaa.bbb.c-c", start_pos=4, end_pos=9, minimal=False)
         self.assertEqual(result, None)
         result = matcher("aaa.bbb.c-c", start_pos=4, end_pos=None, minimal=True)
@@ -409,26 +411,24 @@ class TestCalcFunctions(unittest.TestCase):
         """
         ACCOUNT bar
         MATCHES %account%.%fqdn%.%code%
-        WITH ANY(), VOWELS(), CHAR(2,2,*);
+        WITH ANY(), VOWELS(), CHAR(3,2,*);
         """
         alias = parse(self.test_char_bad_label_index.__doc__)[0]
         matchex = alias.matchex
 
-        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*')
-        self.assertEqual(len(matched),1)
+        self.assertFalse(matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.baz.f3z'))
         return
 
     def test_char_bad_label_negative_index(self):
         """
         ACCOUNT bar
         MATCHES %account%.%fqdn%.%code%
-        WITH ANY(), VOWELS(), CHAR(-2,2,*);
+        WITH ANY(), VOWELS(), CHAR(-3,2,*);
         """
         alias = parse(self.test_char_bad_label_negative_index.__doc__)[0]
         matchex = alias.matchex
 
-        matched = matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*')
-        self.assertEqual(len(matched),1)
+        self.assertFalse(matchex.match(alias.calc, alias.accounts, alias.aliases, 'bar.foo.f2*'))
         return
     
     def test_account_index(self):

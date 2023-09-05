@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019,2023 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class Matcher(object):
        
         # Match a fixed string.
         if not (end_pos is None or minimal):
-            to_match = address[start_pos:end_pos]
+            to_match = address[start_pos:end_pos+1]
             if to_match and to_match[0] in start_chars and to_match[-1] in end_chars:
                 if len(to_match) > 2:
                     if not set(to_match[1:-1]) <= middle_chars:
@@ -80,6 +80,9 @@ class Matcher(object):
         test_pos = start_pos
         while test_pos < len(address):
             test_char = address[test_pos]
+            if test_pos == start_pos:
+                if test_char not in start_chars:
+                    return None
             if test_char in end_chars:
                 valid_end_pos = test_pos
                 if minimal and (end_pos is None or test_pos >= end_pos):
@@ -120,6 +123,19 @@ class Matcher(object):
         The list of character sets is referenced, not copied.
         """
         return Matcher(name,*self.char_sets)
+    
+class MatchFQDN(Matcher):
+    """Specifically for FQDNs.
+    
+    Enforces the rule that an FQDN must contain at least one internal ".".
+    """
+    def __call__(self, address, start_pos=0, end_pos=None, minimal=False):
+        start_end = Matcher.__call__(self, address, start_pos, end_pos, minimal)
+        if start_end is None:
+            return start_end
+        if '.' not in address[start_end[0]:start_end[1]+1]:
+            return None
+        return start_end
     
 class MatchAny(Matcher):
     """Matches anything and everything!
