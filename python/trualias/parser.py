@@ -23,12 +23,17 @@ the specifications is done by calling trualias.alias.Alias.match().
 import logging
 from ipaddress import ip_address
 from io import StringIO
+import importlib
 
 from .config_base import ConfigurationError, Loader, DEFAULT_CONFIG
 from .alias import Alias, Subscriptable
 
 class ParseError(ConfigurationError):
     """A parsing error occurred."""
+    pass
+
+class ProcessorError(ConfigurationError):
+    """An error was encountered loading the pre/post processing module."""
     pass
 
 BOOLEAN_VALUE = { 'true':True, '1':True, 'false':False, '0':False }
@@ -77,6 +82,19 @@ def to_statistics(value):
         value = 0
     return value
 
+REQUIRED_PROCESSOR_MODULE_ATTRIBUTES = "ACCOUNTS ALIASES reload preprocess postprocess".split()
+
+def to_module(value):
+    """Import a module and return a handle to it."""
+    try:
+        module = importlib.import_module(value)
+    except Exception as e:
+        raise ProcessorError('{}: {}'.format(type(e).__name__, e))
+    for attr in REQUIRED_PROCESSOR_MODULE_ATTRIBUTES:
+        if not hasattr(module, attr):
+            raise ProcessorError('Processing module "{}" is missing "{}"'.format(module, attr))
+    return module
+
 class StreamParsingLoader(Loader):
     """Creates a configuration dictionary by parsing a text stream.
     
@@ -84,10 +102,11 @@ class StreamParsingLoader(Loader):
     to override read_line().
     """
 
-    CONFIG_FIRST_WORDS = set('HOST PORT LOGGING DEBUG STATISTICS PYTHON_IS_311'.split())
+    CONFIG_FIRST_WORDS = set('HOST PORT LOGGING DEBUG STATISTICS PYTHON_IS_311 PROCESSOR'.split())
     CONFIG_SECOND_WORDS = dict(DEBUG=['ACCOUNT'])
     CONFIG_MAP = {
             'PYTHON_IS_311': ('python_is_311', to_boolean),
+            'PROCESSOR': ('processor', to_module),
             'HOST': ('host', to_address),
             'PORT': ('port', to_port),
             'LOGGING': ('logging', to_loglevel),

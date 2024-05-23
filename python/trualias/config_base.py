@@ -21,6 +21,7 @@ from ipaddress import ip_address
 
 PYTHON_IS_311 = int( sysconfig.get_python_version().split('.')[1] ) >= 11
 
+PROCESSOR = None
 HOST = ip_address('127.0.0.1')
 PORT = 3047
 LOGGING = logging.WARNING
@@ -35,7 +36,7 @@ class ConfigurationError(Exception):
     """An invalid/inconsistent configuration."""
     def __init__(self, reason, additional=None):
         self.reason = reason
-        self.additional = additional or []
+        self.additional = additional or {}
         return
     
     def __str__(self):
@@ -56,6 +57,7 @@ def DEFAULT_CONFIG(minimal=False):
     else:
         config = dict(
                     python_is_311=PYTHON_IS_311,
+                    processor=PROCESSOR,
                     host=HOST,
                     port=PORT,
                     logging=LOGGING,

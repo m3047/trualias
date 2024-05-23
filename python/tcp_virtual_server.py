@@ -81,14 +81,30 @@ class VirtualRequest(base_server.Request):
         """
         parts = request[1].split('@')
         if len(parts) == 2 and parts[1].lower() in self.config.alias_domains:
-            delivery_address = trualias.find(parts[0], self.config)
+            delivery_address = parts[0]
+            domain = parts[1]
         else:
             self.response = '500 not found\n'
             self.stop_timer('not_found')
             return
 
+        if delivery_address and self.config.processor:
+            try:
+                delivery_address,domain = self.config.processor.preprocess(delivery_address, domain)
+            except Exception as e:
+                delivery_address = ''
+                logging.error('Error during processor.preprocess(): {}: {}'.format(type(e).__name__,e))
         if delivery_address:
-            self.response = '200 {}@{}\n'.format(delivery_address, parts[1])
+            delivery_address = trualias.find(delivery_address, self.config)
+        if delivery_address and self.config.processor:
+            try:
+                delivery_address,domain = self.config.processor.postprocess(delivery_address, domain)
+            except Exception as e:
+                delivery_address = ''
+                logging.error('Error during processor.postprocess(): {}: {}'.format(type(e).__name__,e))
+
+        if delivery_address:
+            self.response = '200 {}@{}\n'.format(delivery_address, domain)
             self.stop_timer('success')
         else:
             self.response = '500 not found\n'

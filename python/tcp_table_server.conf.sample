@@ -1,5 +1,20 @@
 LOGGING: info
 DEBUG ACCOUNT: debug_account
+
+# Preprocess and postprocess module. Calls the functions
+#
+#    preprocess( alias, None ) -> (alias, None)
+#
+# and
+#
+#    postprocess( account, None) -> (account, None)
+#
+# respectively in the specified python module if the python module
+# is defined.
+#
+# By default, neither preprocessing or postprocessing is performed.
+# PROCESSOR: processing_sample
+
 # These are the address and port to listen on; the defaults are shown.
 # HOST: 127.0.0.1
 # PORT: 3047
