@@ -21,7 +21,7 @@ import logging
 if '..' not in sys.path:
     sys.path.insert(0,'..')
 
-from trualias import CASE_SENSITIVE, HOST, PORT, LOGGING, DEBUG_ACCOUNT
+from trualias import HOST, PORT, LOGGING, DEBUG_ACCOUNT
 import trualias.config as config
 import trualias.parser as parser
 
