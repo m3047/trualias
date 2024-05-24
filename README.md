@@ -1,6 +1,6 @@
 # trualias
 
-_Copyright (c) 2019-2023 Fred Morris, Tacoma WA. Apache 2.0 license._
+_Copyright (c) 2019-2024 Fred Morris, Tacoma WA. Apache 2.0 license._
 
 Trualias is a postfix tcp table that lets you hand out your email address to anyone and everyone but add a bit of math to
 protect yourself while doing so.
@@ -28,26 +28,6 @@ The domains with aliases being mapped do not need to be listed in `virtual_alias
 
 You will want to use `tcp_virtual_server` rather than `tcp_table_server` because current
 policy of the _Postfix_ team decrees TCP tables to be a security risk when looking up aliases for local accounts.
-
-### Milter server (DEPRECATED)
-
-NOTE: In November 2022 `tcp_table_server.py` (and by implication `tcp_virtual_server.py`) were updated to be compatible
-with _Python 3.11_. The milter server has not been updated and there are no current plans to do so.
-
-There is also a _milter_ implementation. It doesn't get as much love, because quite frankly I have no concerns
-or difficulties recompiling and replacing `local(8)` and the TCP table solution works perfectly with _Postfix_ `local_recipient_maps` and rejects recipients during the SMTP `RCPT` exchange.
-
-_Postfix_ has some issues with milters. For starters, although the milter protocol supports rejecting recipients
-during SMTP `RCPT`, it doesn't support rewriting them until EOB (end of message). In reality the milter protocol
-is capable of fast-forwarding in the case of envelope-only operations and by fast-forwarding recipient
-rewriting could occur during SMTP `RCPT`, but it doesn't get implemented that way.
-
-Partly as a consequence of this, `local_recipient_maps` cannot be utilized. They're processed first and the
-milter implementation makes it impossible (pointless) to process them afterwards. Because `local_recipient_maps`
-is not a viable option, the milter makes use of SMTP `VRFY` to validate local delivery which has its own issues.
-See [install/MILTER_README.md](https://github.com/m3047/trualias/blob/fwm/install/MILTER_README.md) for futher
-details regarding configuring the milter server with _Postfix_. The code has been written with replacing `VRFY`
-with some other source of local account / identity truth in mind.
 
 ### Some examples
 
