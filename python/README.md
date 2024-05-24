@@ -77,8 +77,23 @@ There are a couple of differences between these.
 | **virtual_alias_map** | delivery address | full email address |
 
 As a consequence, `tcp_table_server` expects just the account and returns an account, whereas `tcp_virtual_server` expects the
-whole aliased email address and returns a whole email address. The `X-Original-To:` address always contains the alias address.
+whole aliased email address and returns a whole email address. The `X-Original-To:` header always contains the alias address.
 
+### Pre and Post Processing
 
+See `preprocessing_sample.py` for further documentation. In a nutshell, you can e.g. make matching case insensitive by lower
+casing with the following:
 
+1) Edit `preprocessing_sample.py` and change `preprocess()` as follows:
 
+```
+def preprocess( alias, domain=None):
+    """Called before Trualias looks up account for the alias."""
+    return (alias.lower(), domain)
+```
+
+2) Edit your configuration and add the line:
+
+```
+PROCESSOR: preprocessing_sample
+```
