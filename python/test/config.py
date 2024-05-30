@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019 by Fred Morris Tacoma WA
+# Copyright (c) 2019,2024 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import logging
 if '..' not in sys.path:
     sys.path.insert(0,'..')
 
-from trualias import CASE_SENSITIVE, HOST, PORT, LOGGING, DEBUG_ACCOUNT
+from trualias import HOST, PORT, LOGGING, DEBUG_ACCOUNT
 import trualias.config as config
 import trualias.parser as parser
 
@@ -35,7 +35,6 @@ class TestBasicParsing(unittest.TestCase):
         """Empty configuration."""
         configuration = parse('')
         
-        self.assertEqual(configuration['case_sensitive'], CASE_SENSITIVE)
         self.assertEqual(configuration['host'], HOST)
         self.assertEqual(configuration['port'], PORT)
         self.assertEqual(configuration['logging'], LOGGING)
@@ -48,7 +47,6 @@ class TestBasicParsing(unittest.TestCase):
         """Multiline but just white space."""
         configuration = parse(' \n\n    \n')
         
-        self.assertEqual(configuration['case_sensitive'], CASE_SENSITIVE)
         self.assertEqual(configuration['host'], HOST)
         self.assertEqual(configuration['port'], PORT)
         self.assertEqual(configuration['logging'], LOGGING)
@@ -94,32 +92,7 @@ class TestParsingConfig(unittest.TestCase):
     
     def test_oddballs(self):
         """Various oddball things."""
-        self.assertTrue(parse('CASE SENSITIVE : true\n\n')['case_sensitive'],
-                        msg='Should successfully parse "true" (space before ":")'
-                       )
-        self.assertTrue(parse(' CASE  SENSITIVE : true \n\n')['case_sensitive'],
-                        msg='Should successfully parse "true" (extra space between keywords )'
-                       )
         self.assertRaises(parser.ParseError, parse, 'DEBUG WALRUS : true \n\n')
-
-        return
-
-    def test_case_sensitive(self):
-        """CASE SENSITIVE setting."""
-        self.assertTrue(parse('CASE SENSITIVE: true\n\n')['case_sensitive'],
-                        msg='Should successfully parse "true"'
-                       )
-        self.assertFalse(parse('CASE SENSITIVE: FALSE\n\n')['case_sensitive'],
-                        msg='Should successfully parse "false"'
-                       )
-        self.assertTrue(parse('CASE SENSITIVE: 1\n\n')['case_sensitive'],
-                        msg='Should successfully parse "1"'
-                       )
-        self.assertFalse(parse('CASE SENSITIVE: 0\n\n')['case_sensitive'],
-                        msg='Should successfully parse "0"'
-                       )
-        self.assertRaises(ValueError, parse, 'CASE SENSITIVE: 42\n\n')
-        self.assertRaises(ValueError, parse, 'CASE SENSITIVE: \n\n')
 
         return
     

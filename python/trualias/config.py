@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022,2024 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@ from .config_base import ConfigurationError, Loader, DEFAULT_CONFIG
 from .alias import SemanticError
 from .parser import StreamParsingLoader
 
+class ReloadError(ConfigurationError):
+    """Calling reload() in the preprocessor context failed."""
+    pass
+
 def from_text(stream,raise_on_error=False):
     """Convenience method loads a Configuration.
     
@@ -49,10 +53,6 @@ class Configuration(object):
         self.config = DEFAULT_CONFIG()
         self.error = 'Not configured.'
         return
-
-    @property
-    def case_sensitive(self):
-        return self.config['case_sensitive']
     
     @property
     def host(self):
@@ -77,6 +77,10 @@ class Configuration(object):
     @property
     def python_is_311(self):
         return self.config['python_is_311']
+    
+    @property
+    def processor(self):
+        return self.config['processor']
     
     def build_maps(self):
         """Builds the internal maps used by lookup methods.
@@ -236,6 +240,21 @@ class Configuration(object):
                                 )
         return
     
+    def processor_reloaded(self):
+        """When a preprocessor module is used certain actions are taken on reload.
+        
+        * ALIASES and ACCOUNTS are updated within the module's namespace.
+        * module.reload() is called.
+        """
+        module = self.processor
+        module.ACCOUNTS = set(self.accounts)
+        module.ALIASES = set(self.aliases)
+        try:
+            module.reload()
+        except Exception as e:
+            raise ReloadError('{}: {}'.format(type(e).__name__, e))
+        return
+        
     def load(self,loader,raise_on_error=False):
         """Use the loader to update the configuration.
         
@@ -246,10 +265,12 @@ class Configuration(object):
             self.update_config(loader.load())
             self.semantic_check()
             self.enforce_uniqueness()
+            if self.processor is not None:
+                self.processor_reloaded()
         except (ConfigurationError, ValueError) as e:
             if raise_on_error:
                 raise e
-            self.error = ' {}: {}'.format(str(type(e)).split('.')[-1].split("'")[0], e)
+            self.error = ' {}: {}'.format(type(e).__name__, e)
             logging.error(self.error)
         return self
 

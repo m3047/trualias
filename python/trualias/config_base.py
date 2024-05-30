@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# Copyright (c) 2019-2022 by Fred Morris Tacoma WA
+# Copyright (c) 2019-2022,2024 by Fred Morris Tacoma WA
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from ipaddress import ip_address
 
 PYTHON_IS_311 = int( sysconfig.get_python_version().split('.')[1] ) >= 11
 
-CASE_SENSITIVE = False
+PROCESSOR = None
 HOST = ip_address('127.0.0.1')
 PORT = 3047
 LOGGING = logging.WARNING
@@ -36,7 +36,7 @@ class ConfigurationError(Exception):
     """An invalid/inconsistent configuration."""
     def __init__(self, reason, additional=None):
         self.reason = reason
-        self.additional = additional or []
+        self.additional = additional or {}
         return
     
     def __str__(self):
@@ -57,7 +57,7 @@ def DEFAULT_CONFIG(minimal=False):
     else:
         config = dict(
                     python_is_311=PYTHON_IS_311,
-                    case_sensitive=CASE_SENSITIVE,
+                    processor=PROCESSOR,
                     host=HOST,
                     port=PORT,
                     logging=LOGGING,

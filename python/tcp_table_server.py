@@ -139,7 +139,21 @@ class Request(object):
     
     def get(self, request):
         """A get request."""
-        delivery_address = trualias.find(request[1], self.config)
+        delivery_address = request[1]
+        if delivery_address and self.config.processor:
+            try:
+                delivery_address = self.config.processor.preprocess(delivery_address)[0]
+            except Exception as e:
+                delivery_address = ''
+                logging.error('Error during processor.preprocess(): {}: {}'.format(type(e).__name__,e))
+        if delivery_address:
+            delivery_address = trualias.find(delivery_address, self.config)
+        if delivery_address and self.config.processor:
+            try:
+                delivery_address = self.config.processor.postprocess(delivery_address)[0]
+            except Exception as e:
+                delivery_address = ''
+                logging.error('Error during processor.postprocess(): {}: {}'.format(type(e).__name__,e))
         if delivery_address:
             self.response = '200 {}\n'.format(delivery_address)
             self.stop_timer('success')
