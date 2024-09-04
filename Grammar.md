@@ -10,7 +10,7 @@ The configuration file contains configuration parameters and alias specification
 
 ## Configuration statements
 
-Configuration statements fit on a single line and are terminated by a newline. The following configuration items are available for `tcp_table_server`. The `milter_server` has some special statements. See `milter_server.conf.sample` for specifics. (In general, refer to the `*.conf.sample` file for whatever server you are using as the authoritative reference.)
+Configuration statements fit on a single line and are terminated by a newline. The following configuration items are available for `tcp_table_server`. (In general, refer to the `*.conf.sample` file for whatever server you are using as the authoritative reference.)
 
 * `HOST` (IP address) The address in turn determines the network interface which will be bound.
 * `PORT` (TCP port) The port the service should listen on.
@@ -20,10 +20,7 @@ Configuration statements fit on a single line and are terminated by a newline. T
 
 Configuration statements supported by other servers include:
 
-* `SMTP HOST` (IP address) Address of an SMTP server providing `VRFY`.
-* `SMTP PORT` (TCP port) The port the SMTP server providing `VRFY` listens on.
-* `LOCAL HOST` (FQDN) Hostname we use when identifying ourselves to the SMTP server.
-* `LOCAL DOMAINS` (FQDN list) List of domains we provide translations for.
+* `ALIAS DOMAINS` (FQDN list) List of domains we provide translations for. (`tcp_virtual_server`)
 
 ```
 <config-statement> := <conf-item> : <conf-value> <newline>
