@@ -1,6 +1,6 @@
 # Alias Specification Grammar
 
-_Copyright (c) 2019-2020 Fred Morris, Tacoma WA. Apache 2.0 license._
+_Copyright (c) 2019-2024 Fred Morris, Tacoma WA. Apache 2.0 license._
 
 The configuration file contains configuration parameters and alias specifications.
 
@@ -267,8 +267,8 @@ MATCHES %account%-%alnum%-%number%-%code%
 WITH CHAR(1,1,-), CHARS(1), CHARS(2);
 ```
 
-This also matches, although it's overly clever and relies on the coincidence that there were no digits
-in the company names.
+This matches for example `foo-experian_19-e82` (underscore instead of a dash), although it's overly clever and relies on the
+coincidence that there were no digits in the company names.
 
 ```
 ACCOUNT foo
