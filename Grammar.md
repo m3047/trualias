@@ -167,8 +167,8 @@ amelia
 the following two expressions are (almost) identical:
 
 ```
-"%account%-%fqdn%-%code%"
-"%account%-%ident%.%ident%-%code%"
+%account%-%fqdn%-%code%
+%account%-%ident%.%ident%-%code%
 ```
 
 (The difference is that the second one allows "_" in the labels.) For the purposes of the rest of this discussion,
@@ -199,7 +199,7 @@ This is the most basic example. Accounts cannot contain "-".
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%ident%-%code%"
+MATCHES %account%-%ident%-%code%
 WITH CHAR(1,-), CHARS();
 ```
 
@@ -208,7 +208,7 @@ Note that this is semantically identical to
 ```
 ACCOUNT foo
 ALIASED *
-MATCHES "%account%-%ident%-%code%"
+MATCHES %account%-%ident%-%code%
 WITH CHAR(1,-), CHARS();
 ```
 
@@ -218,7 +218,7 @@ Matches `foo-google-g6` and `baz-google-g6`, delivering to local accounts `foo` 
 
 ```
 ACCOUNT foo, bar, baz
-MATCHES "%account%-%ident%-%code%"
+MATCHES %account%-%ident%-%code%
 WITH CHAR(1,-), CHARS();
 ```
 
@@ -229,7 +229,7 @@ Matches `joe-google-g6` and `paul-macys-m5` and delivers them to the local accou
 ```
 ACCOUNT foo
 ALIASED joe, paul
-MATCHES "%alias%-%ident%-%code%"
+MATCHES %alias%-%ident%-%code%
 WITH CHAR(1,-), CHARS();
 ```
 
@@ -239,7 +239,7 @@ Matches `foo-google.com-gm10` and `foo-register.co.uk-ro14`.
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%fqdn%-%code%"
+MATCHES %account%-%fqdn%-%code%
 WITH CHAR(1,1,-), CHAR(2,-1,-), CHARS();
 ```
 
@@ -252,7 +252,7 @@ we explicitly specified two identifiers separated by one dot).
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%ident%.%ident%-%code%"
+MATCHES %account%-%ident%.%ident%-%code%
 WITH CHAR(1,1,-), CHAR(2,-1,-), CHARS(1);
 ```
 
@@ -263,7 +263,7 @@ validation of the year.
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%alnum%-%number%-%code%"
+MATCHES %account%-%alnum%-%number%-%code%
 WITH CHAR(1,1,-), CHARS(1), CHARS(2);
 ```
 
@@ -272,7 +272,7 @@ in the company names.
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%ident%-%code%"
+MATCHES %account%-%ident%-%code%
 WITH CHAR(1,-), ALPHAS(), DIGITS();
 ```
 
@@ -282,7 +282,7 @@ If you truly want to validate years (treat them as an enumeration) you can decla
 ```
 ACCOUNT foo
 ALIASED 18, 2018, 19, 2019
-MATCHES "%account%-%ident%-%alias%-%code%"
+MATCHES %account%-%ident%-%alias%-%code%
 WITH CHAR(1,-), CHARS();
 ```
 
