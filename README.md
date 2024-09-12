@@ -40,7 +40,7 @@ Let's start with an account named `foo`, and define an alias pattern for `foo-ma
 
 ```
 ACCOUNT foo
-MATCHES "%account%-%alnum%-%code%
+MATCHES %account%-%alnum%-%code%
 WITH CHAR(1,1,-), CHARS()
 ```
 
@@ -49,7 +49,7 @@ Maybe we don't want to reflect our actual account `foo`, and want to set up a tr
 ```
 ACCOUNT foo
 ALIASED joe
-MATCHES "%alias%-%alnum%-%code%
+MATCHES %alias%-%alnum%-%code%
 WITH CHAR(1,1,-), CHARS()
 ```
 You will quickly discover that you're not allowed to put certain things right next to each other, because they
