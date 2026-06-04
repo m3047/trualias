@@ -1,0 +1,11 @@
+[Application]
+statistics = None
+logging = info
+# Raw request logging...
+req_logging = raw_message
+# ..or turn it off (default)
+#req_logging = 
+
+[Network]
+address = 127.0.0.1
+port = 3047
