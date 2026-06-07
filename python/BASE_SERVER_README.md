@@ -194,8 +194,6 @@ from dns.resolver import Resolver, NXDOMAIN, NoAnswer, Answer
 import dns.rcode as rcode
 import dns.rdatatype as rdtype
 
-import concurrent.futures
-
 def lookup_task_( fqdn ):
     """Actual MX lookup thread."""
     resolver = Resolver()
@@ -205,21 +203,24 @@ def lookup_task_( fqdn ):
         result = None
     return result
 
-def mx_lookup( fqdn ):
+async def mx_lookup( fqdn, loop ):
     """Performs MX lookup for a domain / fqdn.
     
     It is possible for any FQDN to have an MX record associated with it.
     """
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        thread = executor.submit( lookup_task_, fqdn )
-        result = thread.result()
-    if result is None:
+    try:
+        result = await loop.run_in_executor( None, lookup_task_, fqdn )
+        if result is None:
+            return None
+    except Exception as e:
+        logging.error('Exception {} during mx lookup: {}'.format(e.__class__.__name__, e))
         return None
+    
     resp = result.response
     if resp.rcode():
         logging.info('Got rcode {} for {}'.format( rcode.to_text(resp.rcode()), fqdn ))
         return None
-
+    
     mx_list = set()
     for rset in resp.answer:
         if rset.rdtype != rdtype.MX:
