@@ -278,6 +278,9 @@ class CoroutineContext(object):
         writer.close()
         if connection_timer is not None:
             connection_timer.stop()
+        # Stop the peer list from growing forever. Conversely, if the same remote address (address+port tuple)
+        # hangs up and connects again it will be logged again.
+        self.peers.discard( remote_addr )
         return
     
 async def close_watchdog(task):

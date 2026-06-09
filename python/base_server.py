@@ -318,9 +318,9 @@ class Configuration(object):
         Section: Application
         
             A space-separated list of flags gleaned from reading the code. ;-)
-            There is really only one in this example application.
         
         Returns a set of zero or more flags:
+            conn_logging    Prints the first request on a new connection.
             raw_message     Prints out the raw client request.
         """
         sect_opt = ( 'Application', 'req_logging' )
@@ -707,7 +707,8 @@ class CoroutineContext(object):
 
             if remote_addr not in self.peers:
                 self.peers.add(remote_addr)
-                logging.info("Received %r from %r" % (message, remote_addr))
+                if 'conn_logging' in self.config.req_logging:
+                    logging.info("Received %r from %r" % (message, remote_addr))
             
             request = self.Request( message, self.statistics, self.request_stats, self.config, self.loop, 
                                     logging_categories=self.config.req_logging
@@ -730,6 +731,7 @@ class CoroutineContext(object):
         writer.close()
         if connection_timer is not None:
             connection_timer.stop()
+        self.peers.discard( remote_addr )
         return
     
 async def close_watchdog(task):

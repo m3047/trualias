@@ -2,7 +2,7 @@
 statistics = None
 logging = info
 # Raw request logging...
-req_logging = raw_message
+req_logging = conn_logging raw_message
 # ..or turn it off (default)
 #req_logging = 
 
