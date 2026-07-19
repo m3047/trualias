@@ -90,6 +90,17 @@ DEFAULT_LOGGING = 'info'
 DEFAULT_ADDRESS = '127.0.0.1'
 DEFAULT_PORT = 3047
 
+class CountingDict(dict):
+    """Counts the values of its keys."""
+    
+    def increment(self, k, i=1):
+        """Returns the incremented value."""
+        if k not in self:
+            self[k] = i
+            return
+        self[k] += i
+        return self[k]
+    
 def resolve_config_files():
     """The places to check for configs.
     
@@ -444,7 +455,7 @@ class Request(object):
     needs. ;-)
     """
 
-    COMMANDS = dict(get=2, stats=1, jstats=1)
+    COMMANDS = dict(get=2, stats=1, jstats=1, coro=1)
     STATISTICS_TYPES = ('success','not_found','bad','stats')
     
     @classmethod
@@ -504,6 +515,8 @@ class Request(object):
                 self.stats()
             elif verb == 'jstats':
                 self.jstats()
+            elif verb == 'coro':
+                self.coro()
         else:
             self.bad_request(validated)
         return
@@ -555,6 +568,21 @@ class Request(object):
         self.stop_timer('stats')
         return
     
+    def coro(self):
+        """Counts of all scheduled coroutines."""
+        counts = CountingDict()
+        for task in (self.config.python_is_311 and asyncio.all_tasks() or asyncio.Task.all_tasks()):
+            counts.increment(task._coro.__name__)
+            
+        width = max( len(k) for k in counts.keys() )
+        
+        response = [
+                "{:<{width}s} {:>3d}".format(k, counts[k], width=width)
+                for k in sorted(counts.keys())
+            ]
+        self.response = '210 ' + '\n212 '.join(response) + '\n'
+        return
+
     def bad_request(self, validator):
         """A bad/unrecognized request."""
         self.response = '400 {}\n'.format(validator.result)
