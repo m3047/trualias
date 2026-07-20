@@ -63,7 +63,7 @@ CoroutineContext
     Shared context for the connection listener and configuration watchdog.
 """
 
-import os, sys
+import os, sys, gc
 from os import path
 from time import time
 import sysconfig
@@ -455,7 +455,7 @@ class Request(object):
     needs. ;-)
     """
 
-    COMMANDS = dict(get=2, stats=1, jstats=1, coro=1)
+    COMMANDS = dict(get=2, stats=1, jstats=1, coro=1, objects=1)
     STATISTICS_TYPES = ('success','not_found','bad','stats')
     
     @classmethod
@@ -517,6 +517,8 @@ class Request(object):
                 self.jstats()
             elif verb == 'coro':
                 self.coro()
+            elif verb == 'objects':
+                self.objects()
         else:
             self.bad_request(validated)
         return
@@ -581,6 +583,25 @@ class Request(object):
                 for k in sorted(counts.keys())
             ]
         self.response = '210 ' + '\n212 '.join(response) + '\n'
+        self.stop_timer('stats')
+        return
+    
+    def objects(self):
+        """Information about all allocated objects."""
+        all_objects = gc.get_objects()
+        object_counts = CountingDict()
+        object_sizes = CountingDict()
+        for o in all_objects:
+            try:
+                object_counts.increment( o.__class__.__name__ )
+                object_sizes.increment( o.__class__.__name__, sys.getsizeof( o ) )
+            except Exception as e:
+                print(e)
+        self.response = '210 {}\n'.format(len(object_counts))
+        self.response += '212 ' + '\n212 '.join( ('{:<26s} {:>4d} {:>7d}K'.format( k, object_counts[k], int(object_sizes[k] / 1024) )
+                                                  for k in sorted(object_counts.keys())
+                                                 ) ) + '\n'
+        self.stop_timer('stats')
         return
 
     def bad_request(self, validator):
